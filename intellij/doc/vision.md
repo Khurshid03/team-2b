@@ -45,42 +45,59 @@ actor "User" as user
 actor "Administrator" as admin
 
 ' system actors
-actor "BookFetching system" <<system>> as BookFetchingSystem
-actor "General Storage system" <<system>> as GeneralStorageSystem
 
 
 ' list all use cases in package
-  usecase "UserStorageSystem" as UserStorageSystem
+usecase "Manage Users" as manageUsers
  
 package LitLore{
+    usecase "CreateAccount" as createAccount
     usecase "Authenticate" as authenticate
-    usecase "Start user session" as startUserSession
-    usecase "Profile" as profile
-    usecase "Look up item" as lookUpItem
+    usecase "View Landing Page" as viewLandingPage
+    usecase "View Profile" as viewProfile
+    usecase "Search Users" as searchUsers
+    usecase "Search Books" as searchBooks
+    usecase "View Book" as viewBook
+    usecase "write Review" as writeReview
     usecase "Manage Reviews" as manageReviews
-    usecase "Manage Friends" as manageFriends
+    usecase "Comment on a Review" as commentOnAReview
+    usecase "Save Book" as saveBook
+    usecase "Manage Friends/Followers/Following" as manageFriends
+    usecase " Manage Account" as manageAccount
+    usecase "Manage Saved Books" as manageSavedBooks
+    usecase "viewUserProfile" as viewUserProfile
+    usecase "Follow User" as followUser
+    
 }
 
 ' list relationships between actors and use cases
-admin --> UserStorageSystem
-user --> startUserSession
-startUserSession --> authenticate : <<includes>>
-authenticate -left-> profile
-authenticate -down-> manageReviews
-authenticate -right-> lookUpItem
-profile -down-> manageFriends
-manageFriends -down-> GeneralStorageSystem
-GeneralStorageSystem -up-> manageFriends
-manageReviews -down-> GeneralStorageSystem
-GeneralStorageSystem --> manageReviews
-lookUpItem -down-> BookFetchingSystem
-lookUpItem --> manageReviews
+
+' Authentication flow
+user --> createAccount
+user --> authenticate
+authenticate --> viewLandingPage : <<includes>>
+
+' Profile and social interactions
+viewLandingPage -left-> viewProfile
+viewProfile --> manageAccount : <<extends>>
+viewProfile --> manageSavedBooks : <<extends>>
+viewProfile --> manageFriends : <<extends>>
+searchUsers --> viewUserProfile
+viewUserProfile --> followUser : <<extends>>
+
+' Searching for content
+viewLandingPage -right-> searchBooks
+viewLandingPage --> searchUsers
 
 
+' Book interactions
+searchBooks --> viewBook
+viewBook --> saveBook
+viewBook --> writeReview
+writeReview --> manageReviews : <<extends>>
+writeReview --> commentOnAReview : <<extends>>
 
-
-
-
-
-
+' Admin interactions
+admin --> manageUsers
+admin --> manageAccount : <<includes>>
 ```
