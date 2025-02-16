@@ -74,7 +74,7 @@ endif
 :Select a book from the results;
 |App Interface|
 :Navigate to book detail page;
-stop
+stop 
 
 @enduml
-```
+``````
