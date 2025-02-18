@@ -50,14 +50,14 @@ title Edit Review Workflow
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
 
 |User|
 start
-:Log in and navigate to the book detail page;
+:Log in;
+:navigate to the book detail page;
 
 |App Interface|
-:Display reviews with "Edit" and "Delete" options for user's own reviews;
+:Display reviews with "Edit" button;
 
 |User|
 :Click the "Edit" button for a specific review;
@@ -69,21 +69,14 @@ start
 :Make changes to the review content;
 
 |App Interface|
-:Send updated review data to backend;
-
-|Backend System|
 :Process and persist the updated review;
 :Return success response;
 
 |App Interface|
 :Update the review content on the interface;
-:Show success message to the user;
 
 |User|
-if (Edits another review?) then (yes)
-  :Repeat the edit action;
-else (no)
-endif
+:View Updated Review;
 
 stop
 
@@ -102,14 +95,14 @@ title Delete Review Workflow
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
 
 |User|
 start
-:Log in and navigate to the book detail page;
+:Log in;
+:navigate to the book detail page;
 
 |App Interface|
-:Display reviews with "Edit" and "Delete" options for user's own reviews;
+:Display reviews with Delete" button;
 
 |User|
 :Click the "Delete" button for a specific review;
@@ -120,15 +113,11 @@ start
 |User|
 if (Confirms deletion?) then (yes)
   |App Interface|
-  :Send delete request to backend;
-  |Backend System|
   :Process and remove the review from the database;
-  :Return success response;
-  |App Interface|
   :Remove the review from the interface;
   :Show success message to the user;
 else (no)
-  |App Interface|
+  |User|
   :Cancel the deletion action;
 endif
 

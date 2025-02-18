@@ -10,7 +10,6 @@ manage (edit/delete) their own comments.
 
 ### **Goals**:
 - Allow users to add a comment to a specific review.
-- Allow users to edit their own comments if needed.
 - Allow users to delete their comments if they no longer want them displayed.
 - Ensure all changes (add/edit/delete) are reflected in real-time.
 
@@ -62,92 +61,26 @@ title Add Comment Workflow
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
 
 |User|
 start
-:Log in and navigate to the book detail page;
+:Log in;
+:navigate to the book detail page;
 
 |App Interface|
 :Display reviews with a "Comments" section;
 
 |User|
-:Click the "Add Comment" button under a specific review;
+:Enter the comment text in the comment box and submit;
 
 |App Interface|
-:Provide input field for the user to write a comment;
-
-|User|
-:Enter the comment text and submit;
-
-|App Interface|
-:Send new comment data to backend;
-
-|Backend System|
-:Process and persist the comment (e.g., userId, reviewId, comment text);
+:Process and persist the comment(save comment to Database);
 :Return success response with the new comment data;
 
 |App Interface|
 :Display the new comment in the review's comment section;
-:Show success message to the user;
 
 |User|
-if (Adds another comment?) then (yes)
-  :Repeat the add comment action;
-else (no)
-endif
-
-stop
-
-@enduml
-```
-
----
-
-### 4.2 **Primary Workflow (Editing a Comment)**
-```plantuml
-@startuml
-
-skin rose
-
-title Edit Comment Workflow
-
-|#application|User|
-|#technology|App Interface|
-|#Implementation|Backend System|
-
-|User|
-start
-:Log in and navigate to the book detail page;
-
-|App Interface|
-:Display user's own comments with an "Edit" option;
-
-|User|
-:Click the "Edit" button for a specific comment;
-
-|App Interface|
-:Display editable input field with the current comment content;
-
-|User|
-:Make changes to the comment and submit;
-
-|App Interface|
-:Send updated comment data to backend;
-
-|Backend System|
-:Process and persist the updated comment;
-:Return success response;
-
-|App Interface|
-:Update the comment content in the interface;
-:Show success message to the user;
-
-|User|
-if (Edits another comment?) then (yes)
-  :Repeat the edit comment action;
-else (no)
-endif
 
 stop
 
@@ -195,7 +128,6 @@ else (no)
   |App Interface|
   :Cancel the deletion action;
 endif
-
 stop
 
 @enduml

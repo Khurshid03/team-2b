@@ -76,6 +76,7 @@ start
 if (Likes another review?) then (yes)
   :Repeat "Like" action for additional reviews;
 else (no)
+
 endif
 
 stop

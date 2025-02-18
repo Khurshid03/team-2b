@@ -35,38 +35,34 @@ title Search for Books
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
 
 |User|
 start
 :Log in to the app;
 :Navigate to search page or access search bar;
 
-|App Interface|
-:Display search bar;
 
+repeat
+|App Interface|
+:Display Search Bar;
 |User|
 :Enter search criteria (username, name);
 
 |App Interface|
-:Send user query to backend;
-
-|Backend System|
+  :Send user query to backend;
 :Query database for matching results;
-if (Results Found?) then (yes)
-  :Return list of matching users;
-  |App Interface|
+backward: No users found;
+repeat while (Results Found?) is (no)
+->yes;
   :Display search results;
-else (no)
-  |App Interface|
-  :Show "No users found" 
-endif
+  
+ |User|
+  :Select a user from the results;
 
-|User|
-:Select a user from the results;
 |App Interface|
 :Navigate to user profile;
-stop 
+stop
+
 
 @enduml
 ``````

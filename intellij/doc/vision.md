@@ -62,42 +62,33 @@ package LitLore{
     usecase "Manage Reviews" as manageReviews
     usecase "Comment on a Review" as commentOnAReview
     usecase "Save Book" as saveBook
-    usecase "Manage Friends/Followers/Following" as manageFriends
+    usecase "Manage Friends" as manageFriends
     usecase " Manage Account" as manageAccount
     usecase "Manage Saved Books" as manageSavedBooks
     usecase "viewUserProfile" as viewUserProfile
     usecase "Follow User" as followUser
-    
+   
 }
 
 ' list relationships between actors and use cases
 
-' Authentication flow
 user --> createAccount
 user --> authenticate
 authenticate --> viewLandingPage : <<includes>>
-
-' Profile and social interactions
 viewLandingPage -left-> viewProfile
-viewProfile --> manageAccount : <<extends>>
-viewProfile --> manageSavedBooks : <<extends>>
-viewProfile --> manageFriends : <<extends>>
+viewProfile <|-- manageAccount : <<extends>>
+viewProfile <|-- manageSavedBooks : <<extends>>
+viewProfile <|-- manageFriends : <<extends>>
 searchUsers --> viewUserProfile
-viewUserProfile --> followUser : <<extends>>
-
-' Searching for content
+viewUserProfile <|-- followUser : <<extends>>
 viewLandingPage -right-> searchBooks
 viewLandingPage --> searchUsers
-
-
-' Book interactions
 searchBooks --> viewBook
-viewBook --> saveBook
+viewBook <|-right- saveBook : <<extends>>
 viewBook --> writeReview
-writeReview --> manageReviews : <<extends>>
-writeReview --> commentOnAReview : <<extends>>
+writeReview <|-- manageReviews : <<extends>>
+writeReview <|-right- commentOnAReview : <<extends>>
+manageReviews <|-- viewUserProfile : <<extends>>
 
-' Admin interactions
 admin --> manageUsers
-admin --> manageAccount : <<includes>>
 ```

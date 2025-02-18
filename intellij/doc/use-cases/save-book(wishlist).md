@@ -32,24 +32,15 @@ title Save/Remove Book from Wishlist with State Awareness
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Back-End System|
-
 
 |User|
 start
 :Log into the app;
-:View a book's details (fetched dynamically via Google Books API);
+:View Book Details;
 
 |App Interface|
-:Query back end to check if the book is already in the wishlist;
 
-|Back-End System|
 :Check if the user has saved this book;
-if (Book is in Wishlist?) then (yes)
-  :Return "in wishlist" state;
-else (no)
-  :Return "not in wishlist" state;
-endif
 
 |App Interface|
 if (Book is in Wishlist?) then (yes)
@@ -63,23 +54,14 @@ endif
 
 |App Interface|
 if (Action is Save?) then (yes)
-  :Send user_id and book details to back end to add book;
+  :Save Book to Wishlist;
 else (no)
-  :Send user_id and book_id to back end to remove book;
+  :Delete Book from Wishlist;
 endif
 
-|Back-End System|
-if (Action is Save?) then (yes)
-  :Add book details to wishlist in database;
-else (no)
-  :Remove book details from wishlist in database;
-endif
-:Return success or error response;
+:Show Success message; 
+|User|
 
-|App Interface|
-if (Response is success?) then (yes)
-else (no)
-:Repeat the save process;
-endif  
+:View the saved books;
 stop
 ```
