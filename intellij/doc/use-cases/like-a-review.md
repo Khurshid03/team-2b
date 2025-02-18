@@ -49,35 +49,27 @@ title Like-a-Review
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
+
 
 |User|
 start
 :Log in and navigate to the book detail page;
 
 |App Interface|
-:Display reviews with metadata and like/unlike buttons;
+:Display reviews and like/unlike buttons;
 
 |User|
 :Click the "Like" button on a specific review;
 
 |App Interface|
-:Send "like" request to backend;
 
-|Backend System|
-:Process and persist the like (e.g., userId and reviewId);
-:Return updated like count;
 
 |App Interface|
 :Update the like button state (highlighted);
 :Update the displayed like count;
 
 |User|
-if (Likes another review?) then (yes)
-  :Repeat "Like" action for additional reviews;
-else (no)
-
-endif
+:View updated like count;
 
 stop
 

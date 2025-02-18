@@ -99,7 +99,7 @@ title Delete Comment Workflow
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
+
 
 |User|
 start
@@ -116,19 +116,17 @@ start
 
 |User|
 if (Confirms deletion?) then (yes)
-  |App Interface|
-  :Send delete request to backend;
-  |Backend System|
-  :Process and remove the comment from the database;
-  :Return success response;
+  
   |App Interface|
   :Remove the comment from the interface;
   :Show success message to the user;
+
 else (no)
-  |App Interface|
   :Cancel the deletion action;
-endif
+endif 
 stop
+
+
 
 @enduml
 ```
