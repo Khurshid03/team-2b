@@ -35,7 +35,7 @@ title Search for Books
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
+
 
 |User|
 start
@@ -51,16 +51,19 @@ start
 |App Interface|
 :Send user query to backend;
 
-|Backend System|
+|App Interface|
 :Query database for matching results;
-if (Results Found?) then (yes)
-  :Return list of matching users;
+while (Results Found?) is (no)
   |App Interface|
-  :Display search results;
-else (no)
+:Show "No users found";
+ 
+
+
+
+endwhile (yes)
   |App Interface|
-  :Show "No users found" 
-endif
+  :Display results;
+
 
 |User|
 :Select a user from the results;

@@ -43,32 +43,27 @@ title Search for Books
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
+
 
 |User|
 start
 :Log in to the app;
 :Navigate to search page or access search bar;
 
+repeat
 |App Interface|
-:Display search bar and filters (e.g., title, author, genre, keywords);
+:Display search bar and filters;
 
 |User|
-:Enter search criteria (e.g., title or author);
+:Enter search criteria;
 
 |App Interface|
 :Send user query to backend;
 
-|Backend System|
-:Query database for matching results;
-if (Results Found?) then (yes)
-  :Return list of matching books;
-  |App Interface|
-  :Display search results;
-else (no)
-  |App Interface|
-  :Show "No books found" message;
-endif
+backward: No books found;
+repeat while (Results found?) is (no)
+-> yes;
+    : Display search results;
 
 |User|
 :Select a book from the results;

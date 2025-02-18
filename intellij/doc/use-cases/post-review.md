@@ -43,43 +43,29 @@ title Post Review - Fully Dressed
 
 |#application|User|
 |#technology|App Interface|
-|#Implementation|Backend System|
+
 
 |User|
 start
 :Log in to the app;
-:Navigate to the book's page;
+:Navigate to the book details page;
 :Click on "Add Review" button;
-
+repeat
 |App Interface|
-:Display review input form (text, ratings, optional tags);
+:Display review input form;
 
 |User|
 :Fill in review details including star rating;
 :Submit the review;
 
 |App Interface|
-:Capture review data;
-:Validate review input (e.g. non-empty, rating within range);
 
-|Backend System|
-if (Valid Input?) then (yes)
-  :Process and save review to database;
-  :Save user-book rating;
+backward: Show error message: Unsuccessful submission;
+repeat while (Submission successful?) is (no)
+-> yes;
+  :Process and save review;
   :Update book's overall rating;
-  :Broadcast review update to other users (real time);
-  :Respond with success message;
-  
-else (no)
-  |App Interface|
-  :Display error message to user;
-
-endif
-
-|App Interface|
-:Refresh book page with the new review;
-:Show "Review posted successfully" confirmation;
-
+  :Show "Review posted successfully" confirmation;
 
 |User|
 :View posted review in the book's review feed;
