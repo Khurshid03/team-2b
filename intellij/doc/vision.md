@@ -5,6 +5,8 @@
  A social app where users can rate and review books that they have read. Follow their friends and like their friend's reviews 
 and comments. 
 
+**Target Audience: Young Avid readers(Age 15 - 30), especially college students**
+
 ## 2. Business case
 Our Social book reviewing app addresses customer needs that other products do not:
 1. Social - It allows more social activities between users something which is not common among major book reviewing platforms.
