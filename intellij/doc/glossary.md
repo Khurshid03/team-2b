@@ -46,6 +46,17 @@ Situations where the intended action of a user does not complete successfully.
 For example:
 - **Network Issues**: Preventing reviews or likes from being posted.
 - **Permission Issues**: Attempting to edit/delete content that a user doesn’t own.
+- 
+### **7 Review**
+Includes a star rating and a written comment on a specific book. User can write how they felt
+reading the book and rate it according to their experience. 
+
+### **8 User Profile**
+A page in the app that contains information about the user including their username, 
+email and their personal reviews. They should also be able to manage their reviews in this page as well. 
+
+### **9 Friends**
+A list of users that follow the user or that the user follows. 
 
 In these cases, the app provides feedback to users, such as error messages.
 

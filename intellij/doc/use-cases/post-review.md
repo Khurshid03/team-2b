@@ -29,7 +29,6 @@ __Failure Scenarios__:
 the app must notify the user and prompt the to retry.
 
 
-
 ## 4. Workflow
 __Fully-dressed workflow diagram__:
 
@@ -74,4 +73,19 @@ stop
 
 @enduml
 ```
+---
+## Sequence Diagram
 
+```plantuml
+actor User as user
+participant "UI" as UI
+participant "Database" as database
+
+
+UI -> user :Dispaly "Add Review" button
+user -> UI : Add a star rating and a text
+user -> UI : click the "Submit" button
+UI -> database : addReview(userID, starRating, text)
+database -> UI : updateDisplay(bookId, reviews)
+UI -> user: displayReviews (bookId, reviews)
+```
