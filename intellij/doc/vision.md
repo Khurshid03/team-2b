@@ -66,9 +66,10 @@ package LitLore{
     usecase "Save Book" as saveBook
     usecase "Manage Friends" as manageFriends
     usecase " Manage Account" as manageAccount
-    usecase "Manage Saved Books" as manageSavedBooks
+    usecase "Manage Wishlist" as manageWishlist
     usecase "viewUserProfile" as viewUserProfile
     usecase "Follow User" as followUser
+    usecase "Like a Review" as likeReview
    
 }
 
@@ -79,18 +80,20 @@ user --> authenticate
 authenticate --> viewLandingPage : <<includes>>
 viewLandingPage -left-> viewProfile
 viewProfile <|-- manageAccount : <<extends>>
-viewProfile <|-- manageSavedBooks : <<extends>>
+viewProfile <|-- manageWishlist : <<extends>>
 viewProfile <|-- manageFriends : <<extends>>
 searchUsers --> viewUserProfile
 viewUserProfile <|-- followUser : <<extends>>
 viewLandingPage -right-> searchBooks
 viewLandingPage --> searchUsers
-searchBooks --> viewBook
+searchBooks <|-- viewBook : <<extends>>
 viewBook <|-right- saveBook : <<extends>>
 viewBook --> writeReview
 writeReview <|-- manageReviews : <<extends>>
-writeReview <|-right- commentOnAReview : <<extends>>
-manageReviews <|-- viewUserProfile : <<extends>>
+writeReview <|-down- commentOnAReview : <<extends>>
+manageReviews --|> viewProfile : <<extends>>
+searchUsers <|-- manageFriends : <<extends>>
+likeReview -left-|> writeReview <<extends>>
 
 admin --> manageUsers
 ```
