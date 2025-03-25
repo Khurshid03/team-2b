@@ -56,17 +56,27 @@ stop
 ```
 
 ## Sequence Diagram
+
 ```plantuml
-actor User as user
-participant "UI" as UI
-participant "Database" as database
+@startuml
+skin rose
+actor User
+participant Main
+participant CmdLineUI
+participant ReviewController
+participant Book
+
+Main -> CmdLineUI : create
+Main -> ReviewController : create\n(set CmdLineUI listener)
+CmdLineUI -> ReviewController : onStartReview()
+
+ReviewController -> Book : getAvailableGenres()
+Book --> ReviewController : List of genres
+ReviewController -> CmdLineUI : showLandingPage(genres)
 
 
-UI -> user : Display login/signup page
-user -> UI : user logs in/creates an account
-UI -> database :authenticate user
-database -> UI : displayBooks()
-UI -> user : viewAllBooks()
+
+@enduml
 
 ```
 
