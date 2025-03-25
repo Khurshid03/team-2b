@@ -53,15 +53,26 @@ public class ReviewController {
 
         // 3. Show books in selected genre
         view.showBooksInGenre(booksInGenre);
+        Book selectedBook = null;
 
-        int bookID = view.promptBookId();
-        Book selectedBook = Book.getBookById(bookID);
-        if (selectedBook == null) {
-            view.showMessage("Invalid book ID.");
-            return;
-        }
-        //show selected book.
+        do {
+            try {
+                int bookID = view.promptBookId();
+                selectedBook = Book.getBookById(bookID);
+
+                if (selectedBook == null) {
+                    view.showMessage("❌ Book ID not found. Please try again.");
+                }
+
+            } catch (NumberFormatException e) {
+                view.showMessage("❌ Invalid input. Please enter a valid numeric book ID.");
+            }
+
+        } while (selectedBook == null);
+
+        // show selected book
         view.showSelectedBook(selectedBook);
+
 
 
         // 4. Get review input
