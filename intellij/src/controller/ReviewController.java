@@ -29,7 +29,7 @@ public class ReviewController {
         String username = view.promptUsername();
         String email = view.promptEmail();
         User user = new User(username, email);
-        view.showMessage("Hello, " + user.getUsername() + "!");
+        view.showMessage("HELLO, " + user.getUsername() + "!");
 
         // 2. Show genres
         List<String> genres = new ArrayList<>(Book.getAvailableGenres());

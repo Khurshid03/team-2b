@@ -46,9 +46,25 @@ public class CmdLineUI implements UI {
     }
 
     public double promptRating() {
-        out.print("Enter your rating (1.0–5.0): ");
-        return Double.parseDouble(scanner.nextLine());
+        double rating = -1;
+
+        while (rating < 1.0 || rating > 5.0) {
+            try {
+                out.print("Enter your rating (1.0–5.0): ");
+                rating = Double.parseDouble(scanner.nextLine());
+
+                if (rating < 1.0 || rating > 5.0) {
+                    out.println("❌ Rating must be between 1.0 and 5.0. Please try again.");
+                }
+
+            } catch (NumberFormatException e) {
+                out.println("❌ Invalid input. Please enter a numeric rating (e.g., 4.5).");
+            }
+        }
+
+        return rating;
     }
+
 
     public String promptComment() {
         out.print("Enter your comment: ");
