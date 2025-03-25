@@ -70,22 +70,61 @@ repeat while (Submission successful?) is (no)
 :View posted review in the book's review feed;
 stop
 
-
 @enduml
 ```
 ---
 ## Sequence Diagram
 
 ```plantuml
-actor User as user
-participant "UI" as UI
-participant "Database" as database
+@startuml
 
+skin rose
 
-UI -> user :Dispaly "Add Review" button
-user -> UI : Add a star rating and a text
-user -> UI : click the "Submit" button
-UI -> database : addReview(userID, starRating, text)
-database -> UI : updateDisplay(bookId, reviews)
-UI -> user: displayReviews (bookId, reviews)
+actor User
+participant Main
+participant CmdLineUI
+participant ReviewController
+participant Book
+participant UserModel as "User"
+participant Review
+participant ReviewManager
+
+Main -> CmdLineUI : create
+Main -> ReviewController : create\n(set CmdLineUI listener)
+CmdLineUI -> ReviewController : onStartReview()
+
+ReviewController -> CmdLineUI : promptUsername()
+User -> CmdLineUI : enters username/email
+CmdLineUI -> ReviewController : return username/email
+ReviewController -> UserModel : new User()
+
+ReviewController -> Book : getAvailableGenres()
+Book -> ReviewController : return genres
+ReviewController -> CmdLineUI : showGenres()
+
+User -> CmdLineUI : selects genre
+CmdLineUI -> ReviewController : onGenreSelected(genre)
+ReviewController -> Book : getBooksByGenre()
+Book -> ReviewController : return list of books
+ReviewController -> CmdLineUI : showBooks()
+
+User -> CmdLineUI : selects book ID
+CmdLineUI -> ReviewController : onBookSelected(bookId)
+ReviewController -> Book : getBookById()
+Book -> ReviewController : return Book
+
+ReviewController -> CmdLineUI : promptRating()
+User -> CmdLineUI : enters rating and comment
+CmdLineUI -> ReviewController : onReviewSubmitted(rating, comment)
+
+ReviewController -> UserModel : writeReview(book, rating, comment)
+UserModel -> Review : new Review()
+ReviewController -> ReviewManager : addReview(review)
+
+ReviewController -> ReviewManager : getReviewsForBook()
+ReviewManager -> ReviewController : return list of reviews
+ReviewController -> CmdLineUI : showReviews()
+
+@enduml
+
 ```

@@ -89,31 +89,33 @@ stop
 `````
 ## 5. Sequence Diagrams
 
-````plantuml
-@startuml
-actor User as user
-participant "UI" as UI
-participant "Database" as Database
 
-UI -> user : Display the "login" window
-user -> UI:   Enter credentials
-UI -> Database: Validate credentials
-UI <- Database: Login successful
-user <- UI: Opens up the Home - landing page
+```plantuml
+@startuml
+
+skin rose 
+
+actor User
+participant Main
+participant CmdLineUI
+participant ReviewController
+participant UserModel as "User"
+
+Main -> CmdLineUI : create
+Main -> ReviewController : create\n(set CmdLineUI listener)
+
+CmdLineUI -> ReviewController : onStartReview()
+ReviewController -> CmdLineUI : promptUsername()
+User -> CmdLineUI : enters username
+
+ReviewController -> CmdLineUI : promptEmail()
+User -> CmdLineUI : enters email
+
+CmdLineUI -> ReviewController : return username + email
+ReviewController -> UserModel : new User(username, email)
+UserModel --> ReviewController : User object
+ReviewController -> CmdLineUI : showMessage("Welcome, username!")
 
 @enduml
-````
-````plantuml
-@startuml
-actor User as user
-participant "UI" as UI
-participant "Database" as Database
 
-UI -> user : Display the "sign-up" window
-user -> UI:  Enter email and create a password
-UI -> Database: Register the credentials
-UI <- Database: Sign-up successful
-user <- UI: Show the Home - landing page
-
-@enduml
-````
+```
