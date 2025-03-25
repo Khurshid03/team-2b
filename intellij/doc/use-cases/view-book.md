@@ -39,7 +39,7 @@ start
 |System|
 :Display the book detail page;
 
-|User|
+|User|  
 :View/read book details;
 stop 
 
