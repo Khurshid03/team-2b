@@ -25,9 +25,10 @@
 
 ## How to Run the Prototype
 
-#### 1.Navigate to the bookreview folder:
+#### 1. Navigate to the src folder:
 ```
-cd bookreview
+cd intellij
+cd src 
 ```
 
 #### 2. Compile the code:

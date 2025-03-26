@@ -65,7 +65,51 @@ Page in real time.
 By the end of this iteration, we expect the following
 capabilities to be fully functional:  
 • A visually appealing Landing Page that shows book categories.  
-• A Book Details Page containing thorough
-information and existing reviews.  
-• A Post Review form that enables registered users
+• A Book Details Page containing thorough information and existing reviews.
+- A Post Review form that enables registered users
 to post their reviews and see updates immediately.
+
+
+
+
+# Iteration Plan 3
+- In this iteration, we will focus on making the app fully interactive and functional, 
+including authentication, a landing page, book details, and review posting.
+- The Manage Review feature (editing and deleting reviews) will possibly added as well.
+
+## Key Goals for Iteration #3:
+
+### 1. Finalize Authentication Process:
+- Enable users to create accounts and log in to access the app.
+- Ensure that only authenticated users can access book details and post reviews.
+
+### 2. Landing Page UI:
+
+- Design and develop a functional landing page that showcases various book categories.
+- Provide navigation options to access different sections of the app (book details, reviews).
+
+### 3. Book Details Page UI:
+
+- Design the Book Details Page to display a book’s title, author, average rating, and reviews.
+- Add a user-friendly interface to allow users to navigate back to the Landing Page or explore other books.
+- Display existing reviews, with the option to post new reviews.
+
+### 4. Post Review Form Implementation:
+
+- Create an interface for users to submit reviews, 
+including a text box for written feedback and a star-rating input for the score.
+- Ensure the form validates user inputs 
+
+### 5. Manage Review (Optional):
+
+- If implemented, users will be able to manage their reviews directly from the Book Details Page:
+- Edit Review - Users can modify their existing review.
+- Delete Review -  Users can remove their review entirely.
+
+
+## Expected Results
+After this iteration, user will basically able to login and start using some features:
+post reviews, explore books and book reviews with actual visualizations. If implemented,
+users will be able to manage their reviews already posted. (they can either delete or
+modify their reviews)
+
