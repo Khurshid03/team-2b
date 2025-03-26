@@ -27,6 +27,7 @@ class User {
     + writeReview(book: Book, rating: double, comment: String): Review
 }
 
+
 class Review {
     - user: User
     - book: Book
