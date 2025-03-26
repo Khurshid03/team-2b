@@ -41,5 +41,7 @@ javac model/*.java view/*.java controller/*.java Main.java
 java Main
 ```
 
+#### Optionally, users can navigate to our Main class and run it directly using the intellij "run" icon
+
 #### We decided to separate the main method from the other parts of the project and gave it its own class: Main.java
 

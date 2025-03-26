@@ -25,9 +25,9 @@ we don't check whether the email is valid, so any string would work.
 ```
 === Welcome to the Book Review App ===
 
-Enter your username: john_doe
-Enter your email: john@example.com
-HELLO, john_doe!
+Enter your username: Felix
+Enter your email: felix@gmail.com
+HELLO, Felix!
 ```
 
 Even though we initially initialized a userID, we did not use it at this time.

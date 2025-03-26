@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 /**
  * Manages storage and retrieval of book reviews.
  */
+
 public class ReviewManager {
     private final List<Review> reviews = new ArrayList<>();
 
