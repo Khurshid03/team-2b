@@ -48,7 +48,6 @@ actor "Administrator" as admin
 
 ' system actors
 
-
 ' list all use cases in package
 usecase "Manage Users" as manageUsers
  
