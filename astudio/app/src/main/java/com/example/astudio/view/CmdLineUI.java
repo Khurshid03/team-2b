@@ -1,5 +1,7 @@
-package view;
+package com.example.astudio.view;
 
+import com.example.astudio.model.Book;
+import com.example.astudio.model.Review;
 import com.example.astudio.view.UI;
 
 import java.io.PrintStream;

@@ -1,7 +1,7 @@
-package controller;
+package com.example.astudio.controller;
 
-import model.*;
-import view.CmdLineUI;
+
+import com.example.astudio.model.Book;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.example.astudio.view;
 
-import model.Book;
-import model.Review;
+import com.example.astudio.model.Book;
+import com.example.astudio.model.Review;
 
 import java.util.List;
 
