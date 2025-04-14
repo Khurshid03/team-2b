@@ -12,10 +12,10 @@ import com.example.astudio.R;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link Loginpage#newInstance} factory method to
+ * Use the {@link LoginFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class Loginpage extends Fragment {
+public class LoginFragment extends Fragment {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -26,7 +26,7 @@ public class Loginpage extends Fragment {
     private String mParam1;
     private String mParam2;
 
-    public Loginpage() {
+    public LoginFragment() {
         // Required empty public constructor
     }
 
@@ -39,8 +39,8 @@ public class Loginpage extends Fragment {
      * @return A new instance of fragment Loginpage.
      */
     // TODO: Rename and change types and number of parameters
-    public static Loginpage newInstance(String param1, String param2) {
-        Loginpage fragment = new Loginpage();
+    public static LoginFragment newInstance(String param1, String param2) {
+        LoginFragment fragment = new LoginFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -61,6 +61,6 @@ public class Loginpage extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_loginpage, container, false);
+        return inflater.inflate(R.layout.fragment_login_page, container, false);
     }
 }
