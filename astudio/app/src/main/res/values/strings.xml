@@ -1,5 +1,21 @@
 <resources>
-    <string name="app_name">astudio</string>
+    <string name="app_name">LitLore</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="welcome_message">Welcome to Litlore</string>
+    <string name="search_hint">search by title or author</string>
+    <string name="search_button_text">Go</string>
+    <string name="home_button">Home</string>
+    <string name="profile_button">Profile</string>
+    <string name="hot_books_text"> 🔥 Top Rated Books</string>
+    <string name="book_cover_image">Book Cover</string>
+    <string name="browse_by_genre"> 📚 Browse by Genre</string>
+    <string name="genre">Genre</string>
+    <string name="book_cover">Book Cover</string>
+    <string name="book_title">Book Title</string>
+    <string name="author">Author</string>
+    <string name="book_description_goes_here">Book description goes here…</string>
+    <string name="book_author">Author: %1$s</string>
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
 </resources>
