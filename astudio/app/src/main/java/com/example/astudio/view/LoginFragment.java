@@ -4,15 +4,20 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
+import com.example.astudio.databinding.FragmentLoginBinding;
 
-public class LoginFragment extends Fragment {
+public class LoginFragment extends Fragment implements LoginUI {
+
+    private FragmentLoginBinding binding;
+    private LoginUI.LoginListener listener;
 
     public LoginFragment() {
         // Required empty public constructor.
@@ -28,23 +33,44 @@ public class LoginFragment extends Fragment {
         return fragment;
     }
 
+    @NonNull
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_login, container, false);
-        Button loginButton = view.findViewById(R.id.LoginButton);
-        // Get the EditText for username
-        EditText usernameInput = view.findViewById(R.id.Text_username);
+        binding = FragmentLoginBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
 
-        loginButton.setOnClickListener(v -> {
-            // Capture the username
-            String username = usernameInput.getText().toString().trim();
-            if (getActivity() instanceof ControllerActivity) {
-                // Pass the username to onLoginSuccess()
-                ((ControllerActivity) getActivity()).onLoginSuccess(username);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Set up the login button to capture the username.
+        binding.LoginButton.setOnClickListener(v -> {
+            String username = binding.TextUsername.getText().toString().trim();
+            // Check that username is not empty (email is optional)
+            if (username.isEmpty()) {
+                Toast.makeText(getContext(), getString(R.string.please_enter_username), Toast.LENGTH_SHORT).show();
+            } else {
+                // If the listener is set, use it; otherwise, call ControllerActivity's login success directly.
+                if (listener != null) {
+                    listener.onLogin(username);
+                } else if (getActivity() instanceof ControllerActivity) {
+                    ((ControllerActivity) getActivity()).onLoginSuccess(username);
+                }
             }
+
         });
-        return view;
+
+    }
+
+    @Override
+    public void setListener(LoginUI.LoginListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }

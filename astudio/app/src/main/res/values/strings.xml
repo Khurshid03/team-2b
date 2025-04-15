@@ -20,5 +20,8 @@
     <string name="show_less">Show less</string>
     <string name="username">username</string>
     <string name="login">Login</string>
-    <string name="email">Email</string>
+    <string name="email">email</string>
+    <string name="please_enter_username">Please enter your username</string>
+    <string name="add_review">Post Review</string>
+    <string name="reviews_header">Reviews</string>
 </resources>
