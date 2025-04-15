@@ -11,7 +11,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.astudio.R;
@@ -63,7 +65,7 @@ public class SearchBooksFragment extends Fragment {
 
         // Setup RecyclerView to display search results in a grid.
         binding.searchBooksRecycler.setLayoutManager(new GridLayoutManager(getContext(), 3));
-        adapter = new SearchBooksAdapter();
+        adapter = new SearchBooksAdapter(); // Initializing the adapter
         binding.searchBooksRecycler.setAdapter(adapter);
 
         // When the search button is clicked, perform a search.
@@ -100,12 +102,11 @@ public class SearchBooksFragment extends Fragment {
                         }
                         float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
                         String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "";
-                        // If authors is a list, take the first author.
                         String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "";
-                        books.add(new Book(title, thumb, rating, description, author));
+                                ? item.volumeInfo.authors.get(0) : "Unknown author";
+                        books.add(new Book(title, thumb, rating, author, description));
                     }
-                    adapter.updateData(books);
+                    adapter.updateData(books); // Updating the adapter with the fetched data
                 } else {
                     Toast.makeText(getContext(), "No books found", Toast.LENGTH_SHORT).show();
                 }
@@ -126,7 +127,7 @@ public class SearchBooksFragment extends Fragment {
     }
 
     // Adapter for displaying search results (book covers)
-    private static class SearchBooksAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<SearchBooksAdapter.SearchBookViewHolder> {
+    public static class SearchBooksAdapter extends RecyclerView.Adapter<SearchBooksAdapter.SearchBookViewHolder> {
         private List<Book> books = new ArrayList<>();
 
         public void updateData(List<Book> books) {
@@ -137,7 +138,6 @@ public class SearchBooksFragment extends Fragment {
         @NonNull
         @Override
         public SearchBookViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            // Reuse your item layout similar to item_genre_book.xml. Adjust if necessary.
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_genre_book, parent, false);
             return new SearchBookViewHolder(view);
         }
@@ -153,12 +153,12 @@ public class SearchBooksFragment extends Fragment {
             return books.size();
         }
 
-        static class SearchBookViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder {
+        static class SearchBookViewHolder extends RecyclerView.ViewHolder {
             private final ImageView bookCoverImage;
 
             public SearchBookViewHolder(@NonNull View itemView) {
                 super(itemView);
-                bookCoverImage = itemView.findViewById(R.id.genreBookCover); // Ensure this ID exists in your item layout.
+                bookCoverImage = itemView.findViewById(R.id.genreBookCover);
             }
 
             public void bind(Book book) {
@@ -166,6 +166,20 @@ public class SearchBooksFragment extends Fragment {
                         .load(book.getThumbnailUrl())
                         .placeholder(R.drawable.placeholder_cover)
                         .into(bookCoverImage);
+
+                itemView.setOnClickListener(v -> {
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable("book", book);
+                    Fragment fragment = new ViewBookFragment();
+                    fragment.setArguments(bundle);
+
+                    // Replace with your fragment container ID
+                    ((FragmentActivity) v.getContext()).getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragmentContainerView, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                });
             }
         }
     }
