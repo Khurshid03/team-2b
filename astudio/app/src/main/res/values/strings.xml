@@ -2,7 +2,7 @@
     <string name="app_name">LitLore</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="welcome_message">Welcome to Litlore</string>
+    <string name="welcome_message">Welcome to Litlore, %1$s!</string>
     <string name="search_hint">search by title or author</string>
     <string name="search_button_text">Go</string>
     <string name="home_button">Home</string>
@@ -19,6 +19,6 @@
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
     <string name="username">username</string>
-    <string name="login">login</string>
+    <string name="login">Login</string>
     <string name="email">Email</string>
 </resources>

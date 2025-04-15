@@ -40,7 +40,7 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     private BrowseBooksListener listener;
 
     // Replace "YOUR_API_KEY" with your actual key or load it from configuration.
-    private static final String API_KEY = "PUT_YOUR_API_HERE";
+    private static final String API_KEY = "PUT_YOUR_API_KEY_HERE";
 
     // Instantiate the adapter with a lambda that delegates to the activity via the listener
     private final HotBookAdapter hotBookAdapter = new HotBookAdapter(book -> {
@@ -67,6 +67,26 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        String username = "";
+        if (getArguments() != null && getArguments().containsKey("username")) {
+            username = getArguments().getString("username");
+        }
+        binding.welcomeMessage.setText(getString(R.string.welcome_message, username));
+
+        //for searching books
+        binding.goButton.setOnClickListener(v -> {
+            String query = binding.searchInput.getText().toString().trim();
+            if (!query.isEmpty()) {
+                // Navigate to SearchBooksFragment with the query as an argument.
+                SearchBooksFragment searchFragment = SearchBooksFragment.newInstance(query);
+                if (getActivity() instanceof ControllerActivity) {
+                    ((ControllerActivity) getActivity()).mainUI.displayFragment(searchFragment);
+                }
+            } else {
+                Toast.makeText(getContext(), "Please enter a search query", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // Set up RecyclerView for hot books (horizontal)
         binding.hotBooksRecycler.setLayoutManager(new LinearLayoutManager(getContext(),

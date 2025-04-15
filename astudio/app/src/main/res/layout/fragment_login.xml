@@ -13,40 +13,45 @@
         android:layout_width="190dp"
         android:layout_height="100dp"
         android:layout_marginVertical="25dp"
-        android:text="Login"
+        android:text="@string/login"
+        android:textStyle="bold"
         android:textAlignment="center"
-        android:textColor="@color/main"
+        android:textColor="@color/black"
         android:textSize="40sp" />
 
     <EditText
         android:id="@+id/Text_username"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:ems="10"
+        android:layout_height="48dp"
+        android:autofillHints="username"
+        android:ems="12"
+        android:layout_marginTop="20dp"
         android:inputType="textPersonName"
-        android:hint="@string/username"
-
-        />
+        android:background="@drawable/search_input_border"
+        android:hint="@string/username" />
 
 
     <EditText
         android:id="@+id/Email"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:autofillHints="Email"
-        android:ems="10"
+        android:ems="12"
+        android:background="@drawable/search_input_border"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="20dp"
         android:inputType="textEmailAddress"
-        android:hint="@string/email"
-        />
+        android:hint="@string/email" />
 
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/LoginButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:padding="16dp"
         android:text="@string/login"
-
-        />
+        android:background="@drawable/general_button" />
 
 
 </LinearLayout>

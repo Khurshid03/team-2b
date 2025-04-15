@@ -5,12 +5,12 @@ import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 
 import com.example.astudio.R;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.ReviewManager;
 import com.example.astudio.view.BrowseBooksFragment;
+import com.example.astudio.view.LoginFragment;
 import com.example.astudio.view.MainUI;
 import com.example.astudio.view.ViewBookFragment;
 import com.example.astudio.view.BrowseBooksUI;
@@ -20,7 +20,7 @@ import java.io.Serializable;
 
 public class ControllerActivity extends AppCompatActivity implements BrowseBooksUI.BrowseBooksListener {
 
-    private MainUI mainUI;
+    public MainUI mainUI;
     private final ReviewManager reviewManager = new ReviewManager();
 
     @Override
@@ -30,10 +30,10 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         mainUI = new MainUI(this);
         setContentView(mainUI.getRootView());
 
-        // Start the landing page fragment (BrowseBooksFragment)
-        BrowseBooksFragment landingFragment = new BrowseBooksFragment();
-        landingFragment.setListener(this);
-        mainUI.displayFragment(landingFragment);
+        // Initialize the LoginFragment and display it as the default page
+        LoginFragment loginfragment = new LoginFragment();
+        mainUI.displayFragment(loginfragment);
+
 
         // Set up the BottomNavigationView listener.
         // Make sure that your MainUI's layout contains a BottomNavigationView with the id bottomNavigationView.
@@ -60,6 +60,20 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 return false;
             }
         });
+    }
+
+    /**
+     * This method is called by the LoginFragment when the user successfully logs in.
+     * It navigates to the home landing page (BrowseBooksFragment).
+     */
+    public void onLoginSuccess(String username) {
+        // Create a new instance of BrowseBooksFragment and pass the username
+        BrowseBooksFragment landingFragment = new BrowseBooksFragment();
+        Bundle args = new Bundle();
+        args.putString("username", username);
+        landingFragment.setArguments(args);
+        landingFragment.setListener(this);
+        mainUI.displayFragment(landingFragment);
     }
 
     @Override
