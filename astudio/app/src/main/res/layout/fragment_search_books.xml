@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -19,7 +20,24 @@
 
         </LinearLayout>
 
-        <LinearLayout
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/back_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_search_button"
+        android:contentDescription="@string/search_button_text"
+        android:elevation="4dp"
+        android:layout_marginTop="12dp"
+        app:layout_goneMarginStart="8dp"
+        android:padding="8dp"
+        android:src="@drawable/back_arrow"
+        app:layout_constraintBottom_toBottomOf="@+id/search_section"
+        app:layout_constraintEnd_toStartOf="@+id/search_section"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
             android:id="@+id/search_section"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -40,17 +58,20 @@
                 android:padding="10dp"
                 android:textSize="15sp" />
 
+
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/go_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
+
                 android:background="@drawable/bg_search_button"
                 android:padding="8dp"
                 android:src="@drawable/search_icon"
                 android:contentDescription="@string/search_button_text"
                 android:elevation="4dp" />
     </LinearLayout>
+
 
     <!-- RecyclerView for displaying search results -->
     <androidx.recyclerview.widget.RecyclerView

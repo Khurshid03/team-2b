@@ -1,8 +1,10 @@
 package com.example.astudio.view;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -10,13 +12,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.astudio.R;
+import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentSearchBooksBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
@@ -35,6 +41,7 @@ public class SearchBooksFragment extends Fragment {
     private FragmentSearchBooksBinding binding;
     private SearchBooksAdapter adapter;
     private static final String API_KEY = "PUT_YOUR_API_KEY_HERE";
+    private MainUI mainUI;
 
     public SearchBooksFragment() {
         // Required empty public constructor.
@@ -59,6 +66,9 @@ public class SearchBooksFragment extends Fragment {
         return binding.getRoot();
     }
 
+
+
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -67,6 +77,26 @@ public class SearchBooksFragment extends Fragment {
         binding.searchBooksRecycler.setLayoutManager(new GridLayoutManager(getContext(), 3));
         adapter = new SearchBooksAdapter(); // Initializing the adapter
         binding.searchBooksRecycler.setAdapter(adapter);
+
+        // Back button implementation: navigate to the home page (BrowseBooksFragment)
+        binding.backButton.setOnClickListener(v -> {
+            // Create a new instance of your home page fragment.
+            BrowseBooksFragment browseFragment = new BrowseBooksFragment();
+
+            if (getActivity() instanceof ControllerActivity) {
+                ((ControllerActivity) getActivity()).mainUI.displayFragment(browseFragment);
+            } else {
+
+                if (getActivity() != null) {
+                    getActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragmentContainerView, browseFragment)
+                            .commit();
+                }
+            }
+        });
+
+
 
         // When the search button is clicked, perform a search.
         binding.goButton.setOnClickListener(v -> {
@@ -173,7 +203,6 @@ public class SearchBooksFragment extends Fragment {
                     Fragment fragment = new ViewBookFragment();
                     fragment.setArguments(bundle);
 
-                    // Replace with your fragment container ID
                     ((FragmentActivity) v.getContext()).getSupportFragmentManager()
                             .beginTransaction()
                             .replace(R.id.fragmentContainerView, fragment)
