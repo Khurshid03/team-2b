@@ -23,6 +23,7 @@ import com.example.astudio.databinding.FragmentBrowseBooksBinding;
 import com.example.astudio.databinding.ItemHotBookBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
+import com.example.astudio.model.UserManager;
 import com.example.astudio.network.GoogleBooksApi;
 import com.example.astudio.network.RetrofitClient;
 
@@ -71,6 +72,12 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         String username = "";
         if (getArguments() != null && getArguments().containsKey("username")) {
             username = getArguments().getString("username");
+        }
+
+        if (username == null || username.isEmpty()) {
+            if (UserManager.getInstance().getCurrentUser() != null) {
+                username = UserManager.getInstance().getCurrentUser().getUsername();
+            }
         }
         binding.welcomeMessage.setText(getString(R.string.welcome_message, username));
 
@@ -180,13 +187,14 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
     @Override
     public void updateHotBooks(List<Book> books) {
-        // Implement if needed
+
     }
 
     @Override
     public void updateGenreBooks(List<Book> books) {
-        // Implement if needed
+
     }
+
 
     // Inner adapter for hot books
     public static class HotBookAdapter extends RecyclerView.Adapter<HotBookAdapter.HotBookViewHolder> {

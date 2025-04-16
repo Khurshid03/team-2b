@@ -1,39 +1,18 @@
 package com.example.astudio.model;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.Serializable;
 
-/**
- * Represents a user who can write reviews.
- */
-public class User {
-    private static final AtomicInteger idGenerator = new AtomicInteger(1);
+public class User implements Serializable {
+    private String username;
+    private String email;
+    // email will be used in the next iteration
 
-    private final int id;
-    private final String username;
-    private final String email;
-
-    public User(String username, String email) {
-        this.id = idGenerator.getAndIncrement();
+    public User(String username) {
         this.username = username;
         this.email = email;
     }
 
-    public int getId() { return id; }
-
-    public String getUsername() { return username; }
-
-    public String getEmail() { return email; }
-
-    /**
-     * Creates a new review by this user.
-     */
-    public Review writeReview(Book book, double rating, String comment) {
-        return new Review(this, book, rating, comment);
-    }
-
-    @Override
-    public String toString() {
-        return username + " (" + email + ")";
+    public String getUsername() {
+        return username;
     }
 }
-

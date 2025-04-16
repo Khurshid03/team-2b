@@ -8,20 +8,25 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.astudio.R;
 import com.example.astudio.model.Book;
+import com.example.astudio.model.Review;
 import com.example.astudio.model.ReviewManager;
+import com.example.astudio.model.UserManager;
 import com.example.astudio.view.BrowseBooksFragment;
 import com.example.astudio.view.LoginFragment;
 import com.example.astudio.view.MainUI;
+import com.example.astudio.view.PostReviewDialogFragment;
 import com.example.astudio.view.ViewBookFragment;
 import com.example.astudio.view.BrowseBooksUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class ControllerActivity extends AppCompatActivity implements BrowseBooksUI.BrowseBooksListener {
 
     public MainUI mainUI;
     private final ReviewManager reviewManager = new ReviewManager();
+    private String currentUsername; // Store the logged-in user's username
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,40 +39,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         LoginFragment loginfragment = new LoginFragment();
         mainUI.displayFragment(loginfragment);
 
-
-        // Set up the BottomNavigationView listener.
-        // Make sure that your MainUI's layout contains a BottomNavigationView with the id bottomNavigationView.
-        BottomNavigationView bottomNavigationView = mainUI.getRootView().findViewById(R.id.bottomNavigationView);
-        bottomNavigationView.setOnItemSelectedListener(new BottomNavigationView.OnItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                BrowseBooksFragment selectedFragment = null;
-                int id = item.getItemId();
-                if (id == R.id.nav_home) {
-                    // When home is selected, create a new BrowseBooksFragment
-                    selectedFragment = new BrowseBooksFragment();
-                    selectedFragment.setListener(ControllerActivity.this);
-                }
-//                else if (id == R.id.nav_profile) {
-//                    // When profile is selected, create a new profile fragment.
-//                    selectedFragment = new ViewProfileFragment();
-//                }
-
-                if (selectedFragment != null) {
-                    mainUI.displayFragment(selectedFragment);
-                    return true;
-                }
-                return false;
-            }
-        });
     }
 
     /**
      * This method is called by the LoginFragment when the user successfully logs in.
-     * It navigates to the home landing page (BrowseBooksFragment).
+     * It navigates to the home landing page (BrowseBooksFragment) and stores the username.
      */
     public void onLoginSuccess(String username) {
-        // Create a new instance of BrowseBooksFragment and pass the username
         BrowseBooksFragment landingFragment = new BrowseBooksFragment();
         Bundle args = new Bundle();
         args.putString("username", username);
@@ -82,12 +60,10 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         ViewBookFragment viewBookFragment = new ViewBookFragment();
         Bundle args = new Bundle();
         args.putSerializable("book", (Serializable) book);
-        viewBookFragment.setArguments(args);
-
+        // Optionally, pass additional book details if needed
         args.putString("description", book.getDescription());
         args.putString("author", book.getAuthor());
-
-        // Display the ViewBookFragment using your MainUI container
+        viewBookFragment.setArguments(args);
         mainUI.displayFragment(viewBookFragment);
     }
 
@@ -95,4 +71,27 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
     public void onGenreSelected(String genre) {
         // Handle genre selections if needed
     }
+
+    /**
+     * This method is called by ViewBookFragment when the user taps the "Post Review" button.
+     * It shows the post review dialog so the user can enter a rating and comment.
+     * Once submitted, it uses ReviewManager to store the review.
+     *
+     * @param book The current book being viewed.
+     */
+//    public void onPostReview(Book book) {
+//        PostReviewDialogFragment dialog = new PostReviewDialogFragment();
+//        dialog.setOnReviewSubmittedListener((rating, comment) -> {
+//            // Use the current user's username (retrieved from a global UserManager or currentUsername field)
+//            String reviewer = (currentUsername != null && !currentUsername.isEmpty()) ? currentUsername : "Anonymous";
+//            Review newReview = new Review(reviewer, rating, comment);
+//            reviewManager.postReview(newReview, new ReviewManager.ReviewCallback() {
+//                @Override
+//                public void onReviewPosted(List<Review> updatedReviews) {
+//
+//                }
+//            });
+//        });
+//        dialog.show(getSupportFragmentManager(), "PostReviewDialog");
+//    }
 }

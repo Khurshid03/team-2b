@@ -7,23 +7,24 @@ import java.util.stream.Collectors;
 /**
  * Manages storage and retrieval of book reviews.
  */
-
 public class ReviewManager {
     private final List<Review> reviews = new ArrayList<>();
 
-    public void addReview(Review review) {
+    /**
+     * Posts a review and notifies the caller via the provided callback.
+     *
+     * @param review   The review to post.
+     * @param callback The callback to notify when the review is posted.
+     */
+    public void postReview(Review review, ReviewCallback callback) {
         reviews.add(review);
+        if (callback != null) {
+            // Return a new list to avoid accidental modifications.
+            callback.onReviewPosted(new ArrayList<>(reviews));
+        }
     }
 
-    public List<Review> getReviewsForBook(Book book) {
-        return reviews.stream()
-                .filter(r -> r.getBook().equals(book))
-                .collect(Collectors.toList());
-    }
-
-    public List<Review> getReviewsByUser(User user) {
-        return reviews.stream()
-                .filter(r -> r.getUser().equals(user))
-                .collect(Collectors.toList());
+    public interface ReviewCallback {
+        void onReviewPosted(List<Review> updatedReviews);
     }
 }

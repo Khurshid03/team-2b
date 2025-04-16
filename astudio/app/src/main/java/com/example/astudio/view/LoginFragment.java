@@ -13,6 +13,8 @@ import androidx.fragment.app.Fragment;
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentLoginBinding;
+import com.example.astudio.model.User;
+import com.example.astudio.model.UserManager;
 
 public class LoginFragment extends Fragment implements LoginUI {
 
@@ -51,14 +53,16 @@ public class LoginFragment extends Fragment implements LoginUI {
             if (username.isEmpty()) {
                 Toast.makeText(getContext(), getString(R.string.please_enter_username), Toast.LENGTH_SHORT).show();
             } else {
-                // If the listener is set, use it; otherwise, call ControllerActivity's login success directly.
+                // Create a new User and store it in UserManager
+                User user = new User(username);
+                UserManager.getInstance().setCurrentUser(user);
+                // Now invoke login success.
                 if (listener != null) {
                     listener.onLogin(username);
                 } else if (getActivity() instanceof ControllerActivity) {
                     ((ControllerActivity) getActivity()).onLoginSuccess(username);
                 }
             }
-
         });
 
     }

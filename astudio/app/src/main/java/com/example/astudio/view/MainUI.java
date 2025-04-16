@@ -1,5 +1,6 @@
 package com.example.astudio.view;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 
@@ -12,42 +13,74 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.example.astudio.R;
 import com.example.astudio.databinding.MainBinding;
+import com.example.astudio.model.UserManager;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
  * Class to manage components shared among all screens and the fragments being displayed.
  */
 public class MainUI {
 
-    private final MainBinding binding;
-    private final FragmentManager fmanager;
+    private final FragmentActivity activity;
+    private final View rootView;
+    private final FragmentManager fragmentManager;
 
     /**
      * Constructor method.
      *
-     * @param factivity The activity this UI is associated with.
+     * @param activity The activity this UI is associated with.
      */
-    public MainUI(@NonNull FragmentActivity factivity) {
-        this.binding = MainBinding.inflate(LayoutInflater.from(factivity));
-        this.fmanager = factivity.getSupportFragmentManager();
+    public MainUI(FragmentActivity activity) {
+        this.activity = activity;
+        this.fragmentManager = activity.getSupportFragmentManager();
+        // Inflate your main UI layout that contains the fragment container and the BottomNavigationView.
+        rootView = LayoutInflater.from(activity).inflate(R.layout.main, null);
+        initBottomNavigation();
+    }
 
-        // Handles insets (status bar, nav bar) cleanly
-        ViewCompat.setOnApplyWindowInsetsListener(this.binding.getRoot(), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+
+    private void initBottomNavigation() {
+        BottomNavigationView bottomNavigationView = rootView.findViewById(R.id.bottomNavigationView);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            int id = item.getItemId();
+
+            if (id == R.id.nav_home) {
+                // For home, create a new instance of BrowseBooksFragment.
+                selectedFragment = new BrowseBooksFragment();
+                // Optionally pass the username from UserManager:
+                String username = (UserManager.getInstance().getCurrentUser() != null)
+                        ? UserManager.getInstance().getCurrentUser().getUsername() : "";
+                Bundle args = new Bundle();
+                args.putString("username", username);
+                selectedFragment.setArguments(args);
+                // You may also set the listener for BrowseBooksFragment here if needed.
+            }
+            // Else, add additional cases for other navigation items.
+            // e.g., if (id == R.id.nav_profile) { selectedFragment = new ProfileFragment(); }
+
+            if (selectedFragment != null) {
+                // Replace the current fragment in the container.
+                fragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerView, selectedFragment, "MAIN_FRAGMENT")
+                        .commit();
+                return true;
+            }
+            return false;
         });
     }
 
     /**
      * Replaces the current fragment with the one passed in.
      *
-     * @param frag The fragment to display.
+     * @param fragment The fragment to display.
      */
-    public void displayFragment(@NonNull Fragment frag) {
-        FragmentTransaction ftrans = this.fmanager.beginTransaction();
-        ftrans.replace(this.binding.fragmentContainerView.getId(), frag);
-        ftrans.commit();
+    public void displayFragment(Fragment fragment) {
+        fragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerView, fragment)
+                .commit();
     }
 
     /**
@@ -57,6 +90,6 @@ public class MainUI {
      */
     @NonNull
     public View getRootView() {
-        return this.binding.getRoot();
+        return rootView;
     }
 }

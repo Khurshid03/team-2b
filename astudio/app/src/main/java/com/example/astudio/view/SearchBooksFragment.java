@@ -86,6 +86,11 @@ public class SearchBooksFragment extends Fragment {
         }
     }
 
+    /**
+     * Fetches books from the Google Books API based on the search query.
+     * @param query The search query entered by the user.
+     */
+
     private void fetchSearchBooks(String query) {
         GoogleBooksApi api = RetrofitClient.getInstance();
         // Fetch up to 20 results for the given query.
@@ -126,6 +131,10 @@ public class SearchBooksFragment extends Fragment {
         });
     }
 
+    /**
+     * Adapter for displaying search results in a RecyclerView.
+     */
+
     // Adapter for displaying search results (book covers)
     public static class SearchBooksAdapter extends RecyclerView.Adapter<SearchBooksAdapter.SearchBookViewHolder> {
         private List<Book> books = new ArrayList<>();
@@ -152,6 +161,10 @@ public class SearchBooksFragment extends Fragment {
         public int getItemCount() {
             return books.size();
         }
+
+        /**
+         * ViewHolder for displaying individual book items.
+         */
 
         static class SearchBookViewHolder extends RecyclerView.ViewHolder {
             private final ImageView bookCoverImage;
