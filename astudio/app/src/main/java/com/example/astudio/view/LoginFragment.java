@@ -16,6 +16,10 @@ import com.example.astudio.databinding.FragmentLoginBinding;
 import com.example.astudio.model.User;
 import com.example.astudio.model.UserManager;
 
+/**
+ * A Fragment that handles the login functionality. It collects the username input, validates it,
+ * and notifies the listener or activity upon successful login.
+ */
 public class LoginFragment extends Fragment implements LoginUI {
 
     private FragmentLoginBinding binding;
@@ -35,6 +39,14 @@ public class LoginFragment extends Fragment implements LoginUI {
         return fragment;
     }
 
+    /**
+     * Called to create and inflate the view for the login fragment.
+     *
+     * @param inflater The LayoutInflater object to inflate the view.
+     * @param container The container that the view will be attached to.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     * @return The root view of the fragment.
+     */
     @NonNull
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -43,6 +55,13 @@ public class LoginFragment extends Fragment implements LoginUI {
         return binding.getRoot();
     }
 
+    /**
+     * Called after the view has been created. This method sets up the login button and listens for
+     * the button click to initiate the login process.
+     *
+     * @param view The fragment's root view.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -67,11 +86,19 @@ public class LoginFragment extends Fragment implements LoginUI {
 
     }
 
+    /**
+     * Sets the listener to handle login success events.
+     *
+     * @param listener The listener to be set for login success events.
+     */
     @Override
     public void setListener(LoginUI.LoginListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Called when the view is destroyed. This method clears the binding object to prevent memory leaks.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

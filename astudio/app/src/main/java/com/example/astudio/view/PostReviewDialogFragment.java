@@ -12,18 +12,40 @@ import android.widget.EditText;
 import android.widget.RatingBar;
 import com.example.astudio.R;
 
+
+
+/**
+ * DialogFragment that presents a UI for submitting a review. It includes a RatingBar for rating and
+ * an EditText for leaving a comment. When the review is submitted, the provided listener is notified.
+ */
+
 public class PostReviewDialogFragment extends DialogFragment {
 
+    /**
+     * Listener interface for receiving the submitted review's rating and comment.
+     */
     public interface OnReviewSubmittedListener {
         void onReviewSubmitted(float rating, String comment);
     }
 
     private OnReviewSubmittedListener listener;
 
+    /**
+     * Sets the listener for handling the submission of the review.
+     *
+     * @param listener The listener that will be notified when a review is submitted.
+     */
     public void setOnReviewSubmittedListener(OnReviewSubmittedListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Creates and returns the dialog for posting a review. This method inflates the layout, sets up
+     * the RatingBar and EditText, and configures the submit button.
+     *
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     * @return The created AlertDialog for posting a review.
+     */
     @NonNull
     @Override
     public AlertDialog onCreateDialog(@Nullable Bundle savedInstanceState) {

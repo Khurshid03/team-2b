@@ -22,11 +22,23 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * This class acts as the controller for the entire application. It keeps track of the application
+ * state, directs UI updates, and listens for UI-generated events.
+ */
+
 public class ControllerActivity extends AppCompatActivity implements BrowseBooksUI.BrowseBooksListener {
 
     public MainUI mainUI;
     private final ReviewManager reviewManager = new ReviewManager();
     private String currentUsername; // Store the logged-in user's username
+
+    /**
+     * This method is called when the activity is created. It initializes the UI and sets up the
+     * default fragment (LoginFragment).
+     *
+     * @param savedInstanceState The saved instance state.
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +66,12 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         mainUI.displayFragment(landingFragment);
     }
 
+    /**
+     * This method is called by the BrowseBooksFragment when the user selects a book.
+     * It navigates to the ViewBookFragment and passes the selected book details.
+     *
+     * @param book The selected book.
+     */
     @Override
     public void onBookSelected(Book book) {
         // Create the ViewBookFragment and pass the selected Book as a Serializable
@@ -66,6 +84,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         viewBookFragment.setArguments(args);
         mainUI.displayFragment(viewBookFragment);
     }
+
+    /**
+     * This method is called by the BrowseBooksFragment when the user selects a genre.
+     * It can be used to filter books based on the selected genre.
+     *
+     * @param genre The selected genre.
+     */
 
     @Override
     public void onGenreSelected(String genre) {

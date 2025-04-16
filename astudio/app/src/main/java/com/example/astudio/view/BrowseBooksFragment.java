@@ -35,6 +35,11 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * A Fragment that handles browsing and searching for books. It interacts with the Google Books API
+ * to fetch top-rated and genre-specific books, and displays them in RecyclerViews.
+ * This Fragment also supports searching for books based on a query.
+ */
 public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
     private FragmentBrowseBooksBinding binding;
@@ -56,6 +61,15 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
             ((ControllerActivity) getActivity()).onBookSelected(book);
         }
     });
+
+    /**
+     * Called when the fragment's view is created. This method inflates the layout for the fragment.
+     *
+     * @param inflater The LayoutInflater object to inflate the view.
+     * @param container The container that the view will be attached to.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     * @return The view for the fragment.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -65,6 +79,13 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         return binding.getRoot();
     }
 
+    /**
+     * Called after the fragment's view has been created. This method sets up UI components,
+     * including RecyclerViews, search functionality, and genre buttons.
+     *
+     * @param view The fragment's root view.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -118,6 +139,10 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         fetchBooksByGenre("Fiction");
     }
 
+    /**
+     * Fetches the top-rated books from the Google Books API and updates the hot books RecyclerView.
+     * This method makes an asynchronous API call to fetch the books.
+     */
     private void fetchTopRatedBooks() {
         GoogleBooksApi api = RetrofitClient.getInstance();
         api.searchBooks("top rated fiction", API_KEY, 10).enqueue(new Callback<BookResponse>() {
@@ -149,6 +174,12 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         });
     }
 
+    /**
+     * Fetches books of a specific genre from the Google Books API and updates the genre books RecyclerView.
+     * This method makes an asynchronous API call to fetch the books.
+     *
+     * @param genre The genre of books to be fetched.
+     */
     private void fetchBooksByGenre(String genre) {
         GoogleBooksApi api = RetrofitClient.getInstance();
         api.searchBooks(genre, API_KEY, 12).enqueue(new Callback<BookResponse>() {
@@ -196,7 +227,10 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     }
 
 
-    // Inner adapter for hot books
+    /**
+     * Adapter class for displaying hot books in a horizontal RecyclerView. Each item represents a book
+     * with its cover image, rating, and click functionality.
+     */
     public static class HotBookAdapter extends RecyclerView.Adapter<HotBookAdapter.HotBookViewHolder> {
 
         private List<Book> books = new ArrayList<>();
@@ -255,7 +289,11 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         }
     }
 
-    // Inner adapter for genre buttons
+    /**
+     * Adapter class for displaying genre buttons in a horizontal RecyclerView. Each button represents
+     * a genre that the user can click to fetch books from that genre.
+     */
+
     private static class GenreAdapter extends RecyclerView.Adapter<GenreAdapter.GenreViewHolder> {
         private final List<String> genres;
         private final View.OnClickListener listener;
@@ -279,6 +317,7 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
             holder.button.setOnClickListener(listener);
         }
 
+
         @Override
         public int getItemCount() {
             return genres.size();
@@ -294,7 +333,10 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
         }
     }
 
-    // Inner adapter for genre books (grid view)
+    /**
+     * Adapter class for displaying books of a specific genre in a grid RecyclerView. Each item represents
+     * a book with its cover image, rating, and click functionality.
+     */
     private static class GenreBookAdapter extends RecyclerView.Adapter<GenreBookAdapter.GenreBookViewHolder> {
         private List<Book> books = new ArrayList<>();
         // Add a listener field to handle click events

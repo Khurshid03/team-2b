@@ -23,6 +23,11 @@ public class ReviewManager {
             callback.onReviewPosted(new ArrayList<>(reviews));
         }
     }
+    /**
+     * Retrieves all reviews.
+     *
+     * @return A list of all reviews.
+     */
 
     public interface ReviewCallback {
         void onReviewPosted(List<Review> updatedReviews);

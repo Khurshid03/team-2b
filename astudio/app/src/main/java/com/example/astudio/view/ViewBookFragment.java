@@ -19,6 +19,10 @@ import com.example.astudio.model.UserManager;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment that displays detailed information about a selected book, including its title, author,
+ * description, rating, and reviews. Users can also submit their reviews via a dialog.
+ */
 public class ViewBookFragment extends Fragment implements ViewBookUI {
 
     private FragmentViewBookBinding binding;
@@ -35,6 +39,15 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         // Required empty public constructor.
     }
 
+    /**
+     * Called to create and inflate the view for this fragment.
+     * Retrieves the selected book from the arguments and optionally the current username.
+     *
+     * @param inflater The LayoutInflater object to inflate the view.
+     * @param container The container that the view will be attached to.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     * @return The root view of the fragment.
+     */
     @NonNull
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -50,6 +63,13 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         return binding.getRoot();
     }
 
+    /**
+     * Called after the fragment's view has been created. This method sets up the book details,
+     * initializes the reviews RecyclerView, and configures the Post Review button.
+     *
+     * @param view The root view of the fragment.
+     * @param savedInstanceState A bundle containing saved instance state, if any.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -67,6 +87,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
 
     /**
      * Opens the PostReviewDialogFragment to collect a review from the user.
+     * Once submitted, the review is added to the list of reviews, and the RecyclerView is updated.
      */
     private void openPostReviewDialog() {
         PostReviewDialogFragment dialog = new PostReviewDialogFragment();
@@ -82,6 +103,12 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         dialog.show(getChildFragmentManager(), "PostReviewDialog");
     }
 
+    /**
+     * Updates the book details on the UI, including title, author, description, rating, and cover image.
+     * This method also handles the expanding/collapsing of the book description.
+     *
+     * @param book The book object whose details are to be displayed.
+     */
     @Override
     public void updateBookDetails(Book book) {
         binding.bookTitle.setText(book.getTitle());
@@ -106,11 +133,19 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         });
     }
 
+    /**
+     * Sets the listener for handling events related to the book view.
+     *
+     * @param listener The listener to be set for the book view events.
+     */
     @Override
     public void setListener(ViewBookListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Called when the view is destroyed. This method clears the binding object to prevent memory leaks.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -118,6 +153,10 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     }
 
     // Inner adapter for reviews.
+    /**
+     * Adapter class for displaying the list of reviews in a RecyclerView.
+     * Each review contains the username, rating, and comment.
+     */
     private static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
         private final List<Review> reviewList;
 
@@ -144,6 +183,9 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             return reviewList.size();
         }
 
+        /**
+         * ViewHolder class for binding the review data (username, rating, comment) to the item view.
+         */
         static class ReviewViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder {
             private final android.widget.TextView usernameText;
             private final android.widget.RatingBar ratingBar;
@@ -156,6 +198,11 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
                 commentText = itemView.findViewById(R.id.review_comment);
             }
 
+            /**
+             * Binds the review data (username, rating, comment) to the corresponding UI elements.
+             *
+             * @param review The review object containing the data to be displayed.
+             */
             public void bind(Review review) {
                 usernameText.setText(review.getUsername());
                 commentText.setText(review.getComment());

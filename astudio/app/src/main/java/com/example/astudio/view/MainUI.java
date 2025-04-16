@@ -40,7 +40,9 @@ public class MainUI {
         initBottomNavigation();
     }
 
-
+    /**
+     * Initializes the BottomNavigationView and sets up the listener for navigation item selection.
+     */
     private void initBottomNavigation() {
         BottomNavigationView bottomNavigationView = rootView.findViewById(R.id.bottomNavigationView);
         bottomNavigationView.setOnItemSelectedListener(item -> {

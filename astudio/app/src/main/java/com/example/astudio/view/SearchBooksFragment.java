@@ -36,7 +36,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class SearchBooksFragment extends Fragment {
+/**
+ * Fragment for searching books using the Google Books API.
+ * It allows users to enter a search query and displays the results in a grid format.
+ * This fragment implements the SearchBooksUI interface to handle book search events.
+ */
+public class SearchBooksFragment extends Fragment implements SearchBooksUI {
 
     private FragmentSearchBooksBinding binding;
     private SearchBooksAdapter adapter;
@@ -66,9 +71,6 @@ public class SearchBooksFragment extends Fragment {
         return binding.getRoot();
     }
 
-
-
-
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -86,7 +88,6 @@ public class SearchBooksFragment extends Fragment {
             if (getActivity() instanceof ControllerActivity) {
                 ((ControllerActivity) getActivity()).mainUI.displayFragment(browseFragment);
             } else {
-
                 if (getActivity() != null) {
                     getActivity().getSupportFragmentManager()
                             .beginTransaction()
@@ -96,9 +97,11 @@ public class SearchBooksFragment extends Fragment {
             }
         });
 
-
-
-        // When the search button is clicked, perform a search.
+        /**
+         * Search button implementation: fetch books based on the search query.
+         * When the search button is clicked, it retrieves the text from the input field,
+         * validates it, and calls the fetchSearchBooks method to perform the search.
+         */
         binding.goButton.setOnClickListener(v -> {
             String query = binding.searchInput.getText().toString().trim();
             if (!query.isEmpty()) {
@@ -120,7 +123,6 @@ public class SearchBooksFragment extends Fragment {
      * Fetches books from the Google Books API based on the search query.
      * @param query The search query entered by the user.
      */
-
     private void fetchSearchBooks(String query) {
         GoogleBooksApi api = RetrofitClient.getInstance();
         // Fetch up to 20 results for the given query.
@@ -161,11 +163,21 @@ public class SearchBooksFragment extends Fragment {
         });
     }
 
+    @Override
+    public void onSearchBooksSuccess(List<Book> books) {
+        // Handle the successful book search results, possibly by updating the UI
+        adapter.updateData(books);
+    }
+
+    @Override
+    public void onSearchBooksFailure(String errorMessage) {
+        // Handle failure in book search
+        Toast.makeText(getContext(), "Search failed: " + errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
     /**
      * Adapter for displaying search results in a RecyclerView.
      */
-
-    // Adapter for displaying search results (book covers)
     public static class SearchBooksAdapter extends RecyclerView.Adapter<SearchBooksAdapter.SearchBookViewHolder> {
         private List<Book> books = new ArrayList<>();
 
@@ -195,7 +207,6 @@ public class SearchBooksFragment extends Fragment {
         /**
          * ViewHolder for displaying individual book items.
          */
-
         static class SearchBookViewHolder extends RecyclerView.ViewHolder {
             private final ImageView bookCoverImage;
 
