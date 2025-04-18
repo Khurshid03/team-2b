@@ -33,7 +33,7 @@ class Review {
     - book: Book
     - rating: double
     - comment: String
-    - timestamp: String
+    - timestamp: String 
     + getUser(): User
     + getBook(): Book
     + getRating(): double

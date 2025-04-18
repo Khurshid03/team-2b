@@ -120,3 +120,50 @@ post reviews, explore books and book reviews with actual visualizations. If impl
 users will be able to manage their reviews already posted. (they can either delete or
 modify their previous reviews)
 
+
+# Iteration #4 Plan
+
+In this iteration, we will take LitLore from a single‑device prototype 
+to a social and persistent experience by introducing follow/like interactions, wish‑lists, user profiles
+
+
+---
+## Key Goals for Iteration #4
+
+### 1. Follow and Like System
+- **Objective:** Let users follow other readers, like their reviews, and view a personalized activity feed.
+- **Functionality Overview:**  
+  • Follow/Unfollow button on every profile.  
+  • Heart icon on each review toggles likes and updates counts in real time.  
+
+
+### 2. User Profile 
+- **Objective:** Showcase identity and enable social actions
+- - **Functionality Overview:**  
+  • Avatar upload and short bio.  
+  • Stats  (#reviews, #likes received, followers / following).  
+  • Reviews and Wishlist tabs
+
+### 3. Manage Reviews
+- **Objective:** Allow users to edit or delete their own reviews.
+- **Functionality Overview:**  
+  • Long‑press or edit/delete button → Edit / Delete.   
+  • Deleting removes the likes and updates average rating.
+
+  ### 4. Wishlist & Reading Status
+- **Objective:** Give users a way to save books they want to read and track progress.
+- **Functionality Overview:**  
+  • “Add to Shelf” action on Book Details 
+  • Dedicated Wishlist tab inside a user’s profile.
+
+---
+## Expected Results
+By the end of Iteration 4, LitLore users will be able to:
+- Follow friends, like reviews, and browse a live social feed.
+- View enriched profiles complete with avatars, stats.
+- Edit or remove their existing reviews.
+- Search the entire LitLore catalog of books and community of readers.
+- Keep a wishlist and reading status shelves.
+
+
+

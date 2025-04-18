@@ -1,47 +1,69 @@
-# Book Review CLI Prototype
 
-
+# LitLore – Android Prototype
 
 ## Features Implemented
 
-- **Landing Page** with welcome message and genre display
-- **User authentication** via input of username and email (assigned a unique user ID)
-- **Genre selection** from a hardcoded list
-- **Book selection** within a genre, based on book ID
-- **Decimal or integer review ratings** (e.g., `4.5`, `3`)
-- **Review creation**, tied to a user and a book
+- **Login Screen**  
+  • Accepts any non‑empty input (username or email) to authenticate a user  
+  • Simple UI with “Login” button and empty‑check validation
 
+- **Landing Page**  
+  • Displays predefined book categories (e.g., History, Science)  
+  • Grid layout for categories
+
+- **Search & Browse Books**  
+  • Integrated with Google Books API in `SearchBooksFragment` & `BrowseBooksFragment`  
+  • Users can search by title, author, or keyword  
+  • Dynamic results list shows cover, title
+
+- **Book Details Page**  
+  • Fetches and displays metadata (title, author, description) from API  
+  • Enables users to submit text reviews and add ratings by tapping star icons
+  
 
 ---
+## Limitations & Simplifying Assumptions
 
-## Limitations and Simplifying Assumptions
+- **No Persistence Across Restarts**  
+  All user sessions and posted reviews live in memory; 
+- quitting the app clears all data.
 
-- All books and genres are **hardcoded** inside the `Book` class (40 books across 4 genres).
-- User data is **not persisted** — it's created anew each time the app runs.
-- No authentication or user history tracking is implemented.
-- No input validation beyond what's required to run the flow.
+- **Static Categories List**  
+  Category names are hard‑coded in the landing page. 
+- However, **book data** comes live from the Google Books API.
+
+- **Minimal Input Validation**  
+  Only non‑empty checks on login and review text
+- no content moderation or length enforcement.
+
+- **Basic Error Handling**  
+  Network errors during API calls show a generic “Failed to load” snackbar.
+
+- **API Key Management**  
+  You must provide your own Google Books API key in places 
+- where it says `PUT_YOUR_API_KEY_HERE`
 
 ---
+## How to Build & Run
 
-## How to Run the Prototype
+### Prerequisites
+- Android Studio
+- Internet connection for API calls
 
-#### 1. Navigate to the src folder:
-```
-cd intellij
-cd src 
-```
+### Steps
+1. Clone the repo:
+   git clone LINK (you can get the SSH key from the gitlab)
 
-#### 2. Compile the code:
-```
-javac model/*.java view/*.java controller/*.java Main.java
-```
 
-#### 3. Run the Application:
-```
-java Main
-```
+2. Add your Google Books API key:
+   
+   ### in BrowseBooksFragment and SearchBooksFragment
+   PUT_YOUR_API_KEY_HERE
 
-#### Optionally, users can navigate to our Main class and run it directly using the intellij "run" icon
 
-#### We decided to separate the main method from the other parts of the project and gave it its own class: Main.java
+3. Run on emulator or device by clicking ▶️ in Android Studio or:
+
+6. Test features: login, browse categories, search books, view details, and post reviews.
+
+
 
