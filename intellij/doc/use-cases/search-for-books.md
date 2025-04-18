@@ -48,14 +48,14 @@ title Search for Books
 |User|
 start
 :Log in to the app;
-:Navigate to search page or access search bar;
+:Navigate to search bar or access search bar;
 
 repeat
 |App Interface|
 :Display search bar and filters;
 
 |User|
-:Enter search criteria;
+:Enter search (title/author) and click goButton icon;
 
 |App Interface|
 :Send user query to backend;
@@ -73,3 +73,37 @@ stop
 
 @enduml
 ``````
+# Sequence Diagram
+```plantuml
+@startuml
+
+skin rose
+
+actor User
+participant Main
+participant CmdLineUI
+participant SearchController
+participant BookRepository
+participant Book
+
+Main -> CmdLineUI : create
+Main -> SearchController : create\n(set CmdLineUI listener)
+CmdLineUI -> SearchController : onStartSearch()
+
+SearchController -> CmdLineUI : promptSearchQuery()
+User -> CmdLineUI : enters query (title/author/keyword)
+CmdLineUI -> SearchController : return query
+
+SearchController -> BookRepository : findBooks(query)
+BookRepository -> SearchController : return List<Book>
+
+SearchController -> CmdLineUI : showBookList(list)
+User -> CmdLineUI : selects bookId
+CmdLineUI -> SearchController : onBookSelected(bookId)
+
+SearchController -> BookRepository : getBookById(bookId)
+BookRepository -> SearchController : return Book
+SearchController -> CmdLineUI : showBookDetail(Book)
+
+@enduml
+```

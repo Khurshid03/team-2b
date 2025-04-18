@@ -40,8 +40,36 @@ start
 :Display the book detail page;
 
 |User|  
-:View/read book details;
+:View book details/Rate and/or post review;
 stop 
 
 @enduml
 ``````
+
+# Sequence Diagram 
+
+```plantuml
+
+@startuml
+
+skin rose
+
+actor User
+participant Main
+participant CmdLineUI
+participant BookViewController
+participant BookRepository
+participant Book
+
+Main -> CmdLineUI : create
+Main -> BookViewController : create\n(set CmdLineUI listener)
+CmdLineUI -> BookViewController : onBookClicked(bookId)
+
+BookViewController -> BookRepository : getBookById(bookId)
+BookRepository -> BookViewController : return Book
+
+BookViewController -> CmdLineUI : displayBookDetail(Book)
+User -> CmdLineUI : viewDisplayedDetails()
+
+@enduml
+```
