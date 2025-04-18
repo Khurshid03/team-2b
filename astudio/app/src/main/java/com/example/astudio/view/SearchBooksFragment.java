@@ -126,7 +126,7 @@ public class SearchBooksFragment extends Fragment implements SearchBooksUI {
     private void fetchSearchBooks(String query) {
         GoogleBooksApi api = RetrofitClient.getInstance();
         // Fetch up to 20 results for the given query.
-        api.searchBooks(query + "+printType:books", API_KEY, 20).enqueue(new Callback<BookResponse>() {
+        api.searchBooks(query + "+printType:books", API_KEY, 21).enqueue(new Callback<BookResponse>() {
             @Override
             public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {

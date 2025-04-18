@@ -14,6 +14,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = ("androidx.test.runner.AndroidJUnitRunner")
     }
 
     buildTypes {
@@ -44,6 +45,7 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.navigation.runtime)
+    implementation(libs.androidx.espresso.contrib)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -54,4 +56,9 @@ dependencies {
     annotationProcessor(libs.compiler)
     implementation(libs.glide.v4160)
     annotationProcessor(libs.compiler.v4160)
+
+
+    androidTestImplementation(libs.androidx.junit.v121)
+    androidTestImplementation(libs.androidx.espresso.core.v361)
+    androidTestImplementation(libs.androidx.fragment.testing)
 }
