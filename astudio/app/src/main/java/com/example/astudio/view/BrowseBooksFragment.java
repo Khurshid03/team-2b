@@ -46,7 +46,7 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     private BrowseBooksListener listener;
 
     // Replace "YOUR_API_KEY" with your actual key or load it from configuration.
-    private static final String API_KEY = "PUT_YOUR_API_KEY_HERE";
+    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
 
     // Instantiate the adapter with a lambda that delegates to the activity via the listener
     private final HotBookAdapter hotBookAdapter = new HotBookAdapter(book -> {
