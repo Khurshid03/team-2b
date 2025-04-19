@@ -52,9 +52,8 @@ actor "Administrator" as admin
 usecase "Manage Users" as manageUsers
  
 package LitLore{
-    usecase "CreateAccount" as createAccount
     usecase "Authenticate" as authenticate
-    usecase "View Landing Page" as viewLandingPage
+    usecase "Browse Books" as viewLandingPage
     usecase "View Profile" as viewProfile
     usecase "Search Users" as searchUsers
     usecase "Search Books" as searchBooks
@@ -74,25 +73,25 @@ package LitLore{
 
 ' list relationships between actors and use cases
 
-user --> createAccount
+
 user --> authenticate
 authenticate --> viewLandingPage : <<includes>>
-viewLandingPage -left-> viewProfile
+viewLandingPage -left-> viewProfile : <<includes>>
 viewProfile <|-- manageAccount : <<extends>>
 viewProfile <|-- manageWishlist : <<extends>>
 viewProfile <|-- manageFriends : <<extends>>
-searchUsers --> viewUserProfile
+searchUsers --> viewUserProfile : <<include>>
 viewUserProfile <|-- followUser : <<extends>>
-viewLandingPage -right-> searchBooks
-viewLandingPage --> searchUsers
+viewLandingPage -right-> searchBooks : <<includes>>
+viewLandingPage --> searchUsers : <<includes>>
 searchBooks <|-- viewBook : <<extends>>
 viewBook <|-right- saveBook : <<extends>>
-viewBook --> writeReview
+viewBook --> writeReview :<<include>>
 writeReview <|-- manageReviews : <<extends>>
 writeReview <|-down- commentOnAReview : <<extends>>
 manageReviews --|> viewProfile : <<extends>>
 searchUsers <|-- manageFriends : <<extends>>
-likeReview -left-|> writeReview <<extends>>
+likeReview -left-|> writeReview : <<extends>>
 
 admin --> manageUsers
 ```

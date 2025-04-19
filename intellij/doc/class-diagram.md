@@ -1,111 +1,131 @@
-
 ```plantuml
-
 @startuml
-skin rose 
+
+skin rose
+'— Model layer —
 class Book {
-    - bookID: int
-    - title: String
-    - author: String
-    - genre: String
-    + getBookID(): int
-    + getTitle(): String
-    + getAuthor(): String
-    + getGenre(): String
-    + getAvailableGenres(): Set<String>
-    + getBooksByGenre(genre: String): List<Book>
-    + getBookById(id: int): Book
+  - title: String
+  - thumbnailUrl: String
+  - rating: float
+  - author: String
+  - description: String
+  + Book(...)
+  + getTitle(): String
+  + getThumbnailUrl(): String
+  + getRating(): float
+  + getAuthor(): String
+  + getDescription(): String
 }
-
-class User {
-    - id: int
-    - username: String
-    - email: String
-    + getId(): int
-    + getUsername(): String
-    + getEmail(): String
-    + writeReview(book: Book, rating: double, comment: String): Review
-}
-
 
 class Review {
-    - user: User
-    - book: Book
-    - rating: double
-    - comment: String
-    - timestamp: String 
-    + getUser(): User
-    + getBook(): Book
-    + getRating(): double
-    + getComment(): String
-    + getTimestamp(): String
+  - username: String
+  - rating: float
+  - comment: String
+  + Review(...)
+  + getUsername(): String
+  + getRating(): float
+  + getComment(): String
 }
 
 class ReviewManager {
-    - reviews: List<Review>
-    + addReview(review: Review): void
-    + getReviewsForBook(book: Book): List<Review>
-    + getReviewsByUser(user: User): List<Review>
+  - reviews: List<Review>
+  + postReview(review: Review, callback)
 }
 
-
-interface UI {
-    + setListener(listener: UIListener)
-    + run()
-    + showGenres(genres: List<String>)
-    + showBooksInGenre(books: List<Book>)
-    + showSelectedBook(book: Book)
-    + showMessage(message: String)
-    + showReviews(reviews: List<Review>, context: String)
+class User {
+  - username: String
+  + User(username)
+  + getUsername(): String
 }
 
-interface UIListener {
-    + onStartReview()
-    + onGenreSelected(genre: String)
-    + onBookSelected(bookId: int)
-    + onReviewSubmitted(rating: double, comment: String)
+class UserManager {
+  - currentUser: User
+  + getInstance(): UserManager
+  + setCurrentUser(u: User)
+  + getCurrentUser(): User
 }
 
-class CmdLineUI {
-    + setListener(listener: UI.Listener)
-    + run()
-    + showGenres(genres: List<String>)
-    + showBooksInGenre(books: List<Book>)
-    + showSelectedBook(book: Book)
-    + showMessage(message: String)
-    + showReviews(reviews: List<Review>, context: String)
-    + promptUsername(): String
-    + promptEmail(): String
-    + promptGenre(): String
-    + promptBookId(): int
-    + promptRating(): double
-    + promptComment(): String
+'— API response layer —
+class BookResponse {
+  - items: List<Item>
 }
 
-class ReviewController {
-    - reviewManager: ReviewManager
-    - ui: UI
-    + setUI(ui: UI): void
-    + runReviewFlow(): void
-    + onStartReview(): void
-    + onGenreSelected(genre: String): void
-    + onBookSelected(bookId: int): void
-    + onReviewSubmitted(rating: double, comment: String): void
+class Item {
+  - volumeInfo: VolumeInfo
 }
 
-class Main {
-    + main(args: String[]): void
+class VolumeInfo {
+  - title: String
+  - authors: List<String>
+  - averageRating: Float
+  - description: String
+  - imageLinks: ImageLinks
 }
-Main --> ReviewController : creates >
-Main --> CmdLineUI : creates >
-User --> Review : writes >
-Book --> Review : reviewed in >
-ReviewManager --> Review : manages >
-CmdLineUI ..|> UI
-ReviewController ..|> UIListener
-ReviewController --> CmdLineUI : interacts >
-ReviewController --> ReviewManager : uses >
+
+class ImageLinks {
+  - thumbnail: String
+}
+
+'— UI / Controller layer —
+class ControllerActivity {
+  - mainUI: MainUI
+  - reviewManager: ReviewManager
+  - currentUsername: String
+  + onCreate(...)
+  + onLoginSuccess(username: String)
+  + onBookSelected(book: Book)
+  + onGenreSelected(genre: String)
+}
+
+class MainUI {
+  + MainUI(activity)
+  + displayFragment(f)
+  + getRootView()
+}
+
+class LoginFragment {
+  + setListener(...)
+}
+
+class BrowseBooksFragment {
+  + setListener(...)
+  + fetchTopRatedBooks()
+  + fetchBooksByGenre(genre)
+}
+
+class SearchBooksFragment {
+  + newInstance(query)
+  + fetchSearchBooks(query)
+}
+
+class ViewBookFragment {
+  + updateBookDetails(book)
+  + openPostReviewDialog()
+}
+
+class PostReviewDialogFragment {
+  + setOnReviewSubmittedListener(...)
+}
+
+'— Associations —
+ReviewManager *-- Review
+UserManager o-- User
+
+BookResponse *-- Item
+Item o-- VolumeInfo
+VolumeInfo o-- ImageLinks
+
+ControllerActivity *-- MainUI
+ControllerActivity *-- ReviewManager
+ControllerActivity --> UserManager
+ControllerActivity --> Book
+ControllerActivity --> Review
+
+ControllerActivity --> LoginFragment
+ControllerActivity --> BrowseBooksFragment
+ControllerActivity --> SearchBooksFragment
+ControllerActivity --> ViewBookFragment
+ControllerActivity --> PostReviewDialogFragment
 
 @enduml
-
 ```

@@ -38,9 +38,9 @@ skin rose
 title Login 
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
-|App Interface|
+|System|
 start
 repeat
 
@@ -50,7 +50,7 @@ repeat
 :Enter email and password;
 
 
-|App Interface|
+|System|
 backward: Invalid Credentials;
 : Check if the credentials are valid;
 repeat while (Valid?) is (no)
@@ -70,15 +70,15 @@ skin rose
 title Sign-up/Create an account
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
-|App Interface|
+|System|
 : Display "Create Account" page;
 
 |User|
 : Enter email and create password;
 
-|App Interface|
+|System|
 : Display "Account created!" message;
 : Display "Home" - landing page;
 
@@ -97,24 +97,24 @@ skin rose
 
 actor User
 participant Main
-participant CmdLineUI
-participant ReviewController
+participant UI
+participant LoginFragment
 participant UserModel as "User"
 
-Main -> CmdLineUI : create
-Main -> ReviewController : create\n(set CmdLineUI listener)
+Main -> UI : create
+Main -> LoginFragment : create\n(set UI listener)
 
-CmdLineUI -> ReviewController : onStartReview()
-ReviewController -> CmdLineUI : promptUsername()
-User -> CmdLineUI : enters username
+UI -> LoginFragment : onStartReview()
+LoginFragment -> UI : promptUsername()
+User -> UI : enters username
 
-ReviewController -> CmdLineUI : promptEmail()
-User -> CmdLineUI : enters email
+LoginFragment -> UI : promptEmail()
+User -> UI : enters email
 
-CmdLineUI -> ReviewController : return username + email
-ReviewController -> UserModel : new User(username, email)
-UserModel --> ReviewController : User object
-ReviewController -> CmdLineUI : showMessage("Welcome, username!")
+UI -> LoginFragment : return username + email
+LoginFragment -> UserModel : new User(username, email)
+UserModel --> LoginFragment : User object
+LoginFragment -> UI : showMessage("Welcome to LitLore, username!")
 
 @enduml
 

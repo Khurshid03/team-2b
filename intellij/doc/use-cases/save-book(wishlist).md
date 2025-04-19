@@ -31,18 +31,18 @@ skin rose
 title Save/Remove Book from Wishlist with State Awareness
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
 :Log into the app;
 :View Book Details;
 
-|App Interface|
+|System|
 
 :Check if the user has saved this book;
 
-|App Interface|
+|System|
 if (Book is in Wishlist?) then (yes)
   :Display "Remove from Wishlist" button;
 else (no)
@@ -52,7 +52,7 @@ endif
 |User|
 :Click on "Save to Wishlist" or "Remove from Wishlist" button;
 
-|App Interface|
+|System|
 if (Action is Save?) then (yes)
   :Save Book to Wishlist;
 else (no)

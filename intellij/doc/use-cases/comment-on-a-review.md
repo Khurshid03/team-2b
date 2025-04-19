@@ -60,24 +60,24 @@ skin rose
 title Add Comment Workflow
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
 :Log in;
 :navigate to the book detail page;
 
-|App Interface|
+|System|
 :Display reviews with a "Comments" section;
 
 |User|
 :Enter the comment text in the comment box and submit;
 
-|App Interface|
+|System|
 :Process and persist the comment(save comment to Database);
 :Return success response with the new comment data;
 
-|App Interface|
+|System|
 :Display the new comment in the review's comment section;
 
 |User|
@@ -98,26 +98,26 @@ skin rose
 title Delete Comment Workflow
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 
 |User|
 start
 :Log in and navigate to the book detail page;
 
-|App Interface|
+|System|
 :Display user's own comments with a "Delete" option;
 
 |User|
 :Click the "Delete" button for a specific comment;
 
-|App Interface|
+|System|
 :Show a confirmation dialog (e.g., "Are you sure you want to delete this comment?");
 
 |User|
 if (Confirms deletion?) then (yes)
   
-  |App Interface|
+  |System|
   :Remove the comment from the interface;
   :Show success message to the user;
 

@@ -48,23 +48,23 @@ skin rose
 title Like-a-Review
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 
 |User|
 start
 :Log in and navigate to the book detail page;
 
-|App Interface|
+|System|
 :Display reviews and like/unlike buttons;
 
 |User|
 :Click the "Like" button on a specific review;
 
-|App Interface|
+|System|
 
 
-|App Interface|
+|System|
 :Update the like button state (highlighted);
 :Update the displayed like count;
 

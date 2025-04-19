@@ -1,4 +1,4 @@
-# Display Landing Page
+# Browse Books
 
 ## 1. Primary actor and goals
 __Primary Actor__:
@@ -25,25 +25,24 @@ access the app.
 __Fully-dressed workflow diagram__:
 ```plantuml
 @startuml
-
 skin rose
 
 title Display Home/Landing Page
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 
 |User|
 start
 :Log in or create Account;
- |App Interface|
+ |System|
 :Display Landing/Home page(Inform of a welcome message);
 :Display a list of book categories for users to pick from;
 |User|
 : Pick the category of books;
 
-|App Interface|
+|System|
 : Display the list of books available in that specific category;
 
 |User|
@@ -62,19 +61,21 @@ stop
 skin rose
 actor User
 participant Main
-participant CmdLineUI
-participant ReviewController
+participant UI
+participant BrowseBooksFragment
 participant Book
 
-Main -> CmdLineUI : create
-Main -> ReviewController : create\n(set CmdLineUI listener)
-CmdLineUI -> ReviewController : onStartReview()
+Main -> UI : create
+Main -> BrowseBooksFragment : create\n(set UI listener)
+UI -> BrowseBooksFragment : onLogin()
 
-ReviewController -> Book : getAvailableGenres()
-Book --> ReviewController : List of genres
-ReviewController -> CmdLineUI : showLandingPage(genres)
+BrowseBooksFragment -> Book : getAvailableGenres()
+BrowseBooksFragment -> Book : getTopRatedBooks()
 
+Book --> BrowseBooksFragment : List of genres
+Book --> BrowseBooksFragment : List of top-rated books
 
+BrowseBooksFragment -> UI : showBrowseBooksPage()
 
 @enduml
 

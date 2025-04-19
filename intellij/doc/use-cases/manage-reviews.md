@@ -49,30 +49,30 @@ skin rose
 title Edit Review Workflow
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
 :Log in;
 :navigate to the book detail page;
 
-|App Interface|
+|System|
 :Display reviews with "Edit" button;
 
 |User|
 :Click the "Edit" button for a specific review;
 
-|App Interface|
+|System|
 :Display editable fields for the review (e.g., text area, star rating);
 
 |User|
 :Make changes to the review content;
 
-|App Interface|
+|System|
 :Process and persist the updated review;
 :Return success response;
 
-|App Interface|
+|System|
 :Update the review content on the interface;
 
 |User|
@@ -95,25 +95,25 @@ skin rose
 title Delete Review Workflow
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
 :Log in;
 :navigate to the book detail page;
 
-|App Interface|
+|System|
 :Display reviews with Delete" button;
 
 |User|
 :Click the "Delete" button for a specific review;
 
-|App Interface|
+|System|
 :Show a confirmation dialog (e.g., "Are you sure you want to delete this review?");
 
 |User|
 if (Confirms deletion?) then (yes)
-  |App Interface|
+  |System|
   :Process and remove the review from the database;
   :Remove the review from the interface;
   :Show success message to the user;

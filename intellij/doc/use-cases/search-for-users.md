@@ -34,7 +34,7 @@ skin rose
 title Search for Books
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
@@ -43,12 +43,12 @@ start
 
 
 repeat
-|App Interface|
+|System|
 :Display Search Bar;
 |User|
 :Enter search criteria (username, name);
 
-|App Interface|
+|System|
   :Send user query to backend;
 :Query database for matching results;
 backward: No users found;
@@ -59,7 +59,7 @@ repeat while (Results Found?) is (no)
  |User|
   :Select a user from the results;
 
-|App Interface|
+|System|
 :Navigate to user profile;
 stop
 

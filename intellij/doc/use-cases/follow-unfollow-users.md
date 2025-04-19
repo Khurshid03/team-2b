@@ -33,20 +33,20 @@ skin rose
 title Follow/Unfollow Users Without Requests
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 |User|
 start
 :Log into the app;
 :Navigate to a user's profile;
 
-|App Interface|
+|System|
 :Display Follow/Unfollow button based on the current data (e.g., local follow status);
 
 |User|
 :Click on the Follow/Unfollow button;
 
-|App Interface|
+|System|
 if (Is Following?) then (yes)
     :Toggle state to Unfollow;
     :Update local state to remove this user from the "following" list;

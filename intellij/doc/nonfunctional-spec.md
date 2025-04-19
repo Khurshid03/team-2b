@@ -72,10 +72,15 @@ units, number and date formatting).
 - Software must be able to run on android devices.
 
 
-## Interfaces
+## 9. Interfaces
 - Since we are getting our book data from an external service,
 our app must be able to correctly communicate with the service
 and populate our app with whatever information we need about the books. 
+
+## 10. External Service
+- We are getting all our books information from Google's Book API which we are using to
+populate the app. There is a limit to the usage of such API, so we limited the amount
+of calls that we did as much as we could to avoid running out of quota. 
 
 
 This nonfunctional requirements document establishes the 

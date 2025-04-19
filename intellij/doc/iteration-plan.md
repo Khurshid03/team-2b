@@ -131,7 +131,7 @@ to a social and persistent experience by introducing follow/like interactions, w
 ## Key Goals for Iteration #4
 
 ### 1. Follow and Like System
-- **Objective:** Let users follow other readers, like their reviews, and view a personalized activity feed.
+- **Objective:** Let users follow other readers, like their reviews.
 - **Functionality Overview:**  
   • Follow/Unfollow button on every profile.  
   • Heart icon on each review toggles likes and updates counts in real time.  
@@ -147,11 +147,11 @@ to a social and persistent experience by introducing follow/like interactions, w
 ### 3. Manage Reviews
 - **Objective:** Allow users to edit or delete their own reviews.
 - **Functionality Overview:**  
-  • Long‑press or edit/delete button → Edit / Delete.   
-  • Deleting removes the likes and updates average rating.
+  • edit and delete buttons on the user's reviews.   
+  • Deleting removes the likes and updates average rating - same thing for editing.
 
-  ### 4. Wishlist & Reading Status
-- **Objective:** Give users a way to save books they want to read and track progress.
+  ### 4. Wishlist
+- **Objective:** Give users a way to save books they want to read.
 - **Functionality Overview:**  
   • “Add to Shelf” action on Book Details 
   • Dedicated Wishlist tab inside a user’s profile.

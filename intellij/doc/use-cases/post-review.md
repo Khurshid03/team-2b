@@ -41,7 +41,7 @@ skin rose
 title Post Review - Fully Dressed
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 
 |User|
@@ -50,14 +50,14 @@ start
 :Navigate to the book details page;
 :Click on "Add Review" button;
 repeat
-|App Interface|
+|System|
 :Display review input form;
 
 |User|
 :Fill in review details including star rating;
 :Submit the review;
 
-|App Interface|
+|System|
 
 backward: Show error message: Unsuccessful submission;
 repeat while (Submission successful?) is (no)
@@ -78,54 +78,33 @@ stop
 
 ```plantuml
 @startuml
-
 skin rose
 
 actor User
-participant Main
-participant CmdLineUI
-participant ReviewController
-participant Book
-participant UserModel as "User"
+participant ViewBookFragment as VBF
+participant PostReviewDialogFragment as PRDF
 participant Review
-participant ReviewManager
+participant ReviewsAdapter as ADA
 
-Main -> CmdLineUI : create
-Main -> ReviewController : create\n(set CmdLineUI listener)
-CmdLineUI -> ReviewController : onStartReview()
 
-ReviewController -> CmdLineUI : promptUsername()
-User -> CmdLineUI : enters username/email
-CmdLineUI -> ReviewController : return username/email
-ReviewController -> UserModel : new User()
+User -> VBF: click postReviewButton
+activate VBF
+VBF -> PRDF: new PostReviewDialogFragment()
+VBF -> PRDF: setOnReviewSubmittedListener(callback)
+VBF -> PRDF: show()
+deactivate VBF
 
-ReviewController -> Book : getAvailableGenres()
-Book -> ReviewController : return genres
-ReviewController -> CmdLineUI : showGenres()
+User -> PRDF: set rating and comment
+User -> PRDF: click submitButton
+activate PRDF
+PRDF -> VBF: onReviewSubmitted(rating, comment)
+PRDF -> PRDF: dialog.dismiss()
+deactivate PRDF
 
-User -> CmdLineUI : selects genre
-CmdLineUI -> ReviewController : onGenreSelected(genre)
-ReviewController -> Book : getBooksByGenre()
-Book -> ReviewController : return list of books
-ReviewController -> CmdLineUI : showBooks()
-
-User -> CmdLineUI : selects book ID
-CmdLineUI -> ReviewController : onBookSelected(bookId)
-ReviewController -> Book : getBookById()
-Book -> ReviewController : return Book
-
-ReviewController -> CmdLineUI : promptRating()
-User -> CmdLineUI : enters rating and comment
-CmdLineUI -> ReviewController : onReviewSubmitted(rating, comment)
-
-ReviewController -> UserModel : writeReview(book, rating, comment)
-UserModel -> Review : new Review()
-ReviewController -> ReviewManager : addReview(review)
-
-ReviewController -> ReviewManager : getReviewsForBook()
-ReviewManager -> ReviewController : return list of reviews
-ReviewController -> CmdLineUI : showReviews()
-
+activate VBF
+VBF -> Review: «create» Review(username, rating, comment)
+VBF -> VBF: reviews.add(newReview)
+VBF -> ADA: notifyItemInserted(index)
+deactivate VBF
 @enduml
-
 ```

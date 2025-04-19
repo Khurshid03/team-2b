@@ -56,20 +56,20 @@ skin rose
 
 actor User
 participant Main
-participant CmdLineUI
-participant BookViewController
+participant UI
+participant ViewBookFragment
 participant BookRepository
 participant Book
 
-Main -> CmdLineUI : create
-Main -> BookViewController : create\n(set CmdLineUI listener)
-CmdLineUI -> BookViewController : onBookClicked(bookId)
+Main -> UI : create
+Main -> ViewBookFragment : create\n(set CmdLineUI listener)
+UI -> ViewBookFragment : onBookSelected(bookId)
 
-BookViewController -> BookRepository : getBookById(bookId)
-BookRepository -> BookViewController : return Book
+ViewBookFragment -> BookRepository : getBookById(bookId)
+BookRepository -> ViewBookFragment : return Book
 
-BookViewController -> CmdLineUI : displayBookDetail(Book)
-User -> CmdLineUI : viewDisplayedDetails()
+ViewBookFragment -> UI : displayBookDetail(Book)
+User -> UI : viewDisplayedDetails()
 
 @enduml
 ```

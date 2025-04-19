@@ -42,7 +42,7 @@ skin rose
 title Search for Books
 
 |#application|User|
-|#technology|App Interface|
+|#technology|System|
 
 
 |User|
@@ -51,13 +51,13 @@ start
 :Navigate to search bar or access search bar;
 
 repeat
-|App Interface|
+|System|
 :Display search bar and filters;
 
 |User|
 :Enter search (title/author) and click goButton icon;
 
-|App Interface|
+|System|
 :Send user query to backend;
 
 backward: No books found;
@@ -67,7 +67,7 @@ repeat while (Results found?) is (no)
 
 |User|
 :Select a book from the results;
-|App Interface|
+|System|
 :Navigate to book detail page;
 stop 
 
@@ -81,29 +81,29 @@ skin rose
 
 actor User
 participant Main
-participant CmdLineUI
-participant SearchController
+participant UI
+participant SearchBooksFragment
 participant BookRepository
-participant Book
 
-Main -> CmdLineUI : create
-Main -> SearchController : create\n(set CmdLineUI listener)
-CmdLineUI -> SearchController : onStartSearch()
 
-SearchController -> CmdLineUI : promptSearchQuery()
-User -> CmdLineUI : enters query (title/author/keyword)
-CmdLineUI -> SearchController : return query
+Main -> UI : create
+Main -> SearchBooksFragment : create\n(set  listener)
+UI -> SearchBooksFragment : onStartSearch()
 
-SearchController -> BookRepository : findBooks(query)
-BookRepository -> SearchController : return List<Book>
+SearchBooksFragment -> UI : promptSearchQuery()
+User -> UI : enters query (title/author/keyword)
+UI -> SearchBooksFragment : return query
 
-SearchController -> CmdLineUI : showBookList(list)
-User -> CmdLineUI : selects bookId
-CmdLineUI -> SearchController : onBookSelected(bookId)
+SearchBooksFragment -> BookRepository : findBooks(query)
+BookRepository -> SearchBooksFragment : return List<Book>
 
-SearchController -> BookRepository : getBookById(bookId)
-BookRepository -> SearchController : return Book
-SearchController -> CmdLineUI : showBookDetail(Book)
+SearchBooksFragment -> UI : showBookList(list)
+User -> UI : selects bookId
+UI -> SearchBooksFragment : onBookSelected(bookId)
+
+SearchBooksFragment -> BookRepository : getBookById(bookId)
+BookRepository -> SearchBooksFragment : return Book
+SearchBooksFragment -> UI : showBookDetail(Book)
 
 @enduml
 ```
