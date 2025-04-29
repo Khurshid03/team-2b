@@ -18,7 +18,7 @@
     <string name="book_author">Author: %1$s</string>
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
-    <string name="username">Username</string>
+    <string name="username">username</string>
     <string name="login">Login</string>
     <string name="email">email</string>
     <string name="please_enter_username">Please enter your username</string>
@@ -28,4 +28,8 @@
     <string name="post_review">post</string>
     <string name="post_review_title">Post Your Review</string>
     <string name="cancel">cancel</string>
+    <string name="create_account">Create Account</string>
+    <string name="password">password</string>
+    <string name="already_have_an_account">Already have an account?</string>
+    <string name="proceed_to_login">Proceed to Login</string>
 </resources>

@@ -68,7 +68,7 @@ public class PostReviewTest {
     public void postReview_addsReviewToList() {
         // 1) Log in
         typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.LoginButton)).perform(click());
+        onView(withId(R.id.CreateAccountButton)).perform(click());
 
         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
 

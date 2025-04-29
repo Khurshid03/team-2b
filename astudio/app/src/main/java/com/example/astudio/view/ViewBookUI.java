@@ -1,6 +1,9 @@
 package com.example.astudio.view;
 
 import com.example.astudio.model.Book;
+import com.example.astudio.model.Review;
+
+import java.util.List;
 
 
 /**
@@ -9,11 +12,37 @@ import com.example.astudio.model.Book;
  */
 
 public interface ViewBookUI {
+
     // Listener interface for ViewBookFragment events.
     interface ViewBookListener {
-        //for later
-        void onBackButtonClicked();
+        /**
+         * Called when a user submits a new review for a book.
+         *
+         * @param book The book being reviewed.
+         * @param review The review that the user submitted.
+         * @param viewBookUI The view (fragment) that generated the event,
+         *                   so the controller can update the UI if needed.
+         */
+        void onReviewSubmitted(Book book, Review review, ViewBookUI viewBookUI);
+        void fetchReviews(Book book, ViewBookUI viewBookUI);
+
+        void onSubmitReview(Book selectedBook, Review newReview, ViewBookFragment viewBookFragment);
+
+        /**
+         * Called when the UI needs to fetch reviews for a particular book.
+         *
+         * @param book The book for which reviews are requested.
+         * @param viewBookUI The UI to update after reviews are fetched.
+         */
+        void fetchReviewsForBook(Book book, ViewBookUI viewBookUI);
     }
+
+    /**
+     * Adds a new review to the UI (e.g., updates the RecyclerView).
+     *
+     * @param review The new review to add to the UI.
+     */
+    void postReview(Review review);
 
     /**
      * Updates the UI with the details of the specified book, including title, author, description, and other relevant information.
@@ -28,4 +57,11 @@ public interface ViewBookUI {
      * @param listener The listener to be set for handling fragment events.
      */
     void setListener(ViewBookListener listener);
+
+    /**
+     * Display multiple reviews for the book.
+     *
+     * @param reviews A list of reviews fetched from Firestore.
+     */
+    void displayReviews(List<Review> reviews);
 }

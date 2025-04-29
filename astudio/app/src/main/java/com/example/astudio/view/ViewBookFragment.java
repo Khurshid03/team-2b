@@ -75,13 +75,15 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         super.onViewCreated(view, savedInstanceState);
         if (selectedBook != null) {
             updateBookDetails(selectedBook);
+            if (listener != null) {
+                listener.fetchReviews(selectedBook, this);
+            }
         }
-        // Initialize the RecyclerView for reviews.
+
         reviewsAdapter = new ReviewsAdapter(reviews);
         binding.reviewsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.reviewsRecycler.setAdapter(reviewsAdapter);
 
-        // Set up the Post Review button to open the review dialog.
         binding.postReviewButton.setOnClickListener(v -> openPostReviewDialog());
     }
 
@@ -92,15 +94,25 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     private void openPostReviewDialog() {
         PostReviewDialogFragment dialog = new PostReviewDialogFragment();
         dialog.setOnReviewSubmittedListener((rating, comment) -> {
-            // Retrieve the current username from UserManager.
-            String currentUsername = (UserManager.getInstance().getCurrentUser() != null)
-                    ? UserManager.getInstance().getCurrentUser().getUsername()
-                    : "Anonymous";
             Review newReview = new Review(currentUsername, rating, comment);
-            reviews.add(newReview);
-            reviewsAdapter.notifyItemInserted(reviews.size() - 1);
+            if (listener != null && selectedBook != null) {
+                listener.onSubmitReview(selectedBook, newReview, this);
+            }
         });
         dialog.show(getChildFragmentManager(), "PostReviewDialog");
+    }
+
+    @Override
+    public void postReview(Review review) {
+        reviews.add(review);
+        reviewsAdapter.notifyItemInserted(reviews.size() - 1);
+    }
+
+    @Override
+    public void displayReviews(List<Review> fetchedReviews) {
+        reviews.clear();
+        reviews.addAll(fetchedReviews);
+        reviewsAdapter.notifyDataSetChanged();
     }
 
     /**

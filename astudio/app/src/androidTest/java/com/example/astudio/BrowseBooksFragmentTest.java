@@ -1,21 +1,14 @@
 package com.example.astudio;
 
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import androidx.test.espresso.matcher.ViewMatchers.Visibility;
-import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
-import android.os.IBinder;
-import android.view.WindowManager;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
+
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -25,7 +18,6 @@ import androidx.test.espresso.Espresso;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.view.SearchBooksFragment;
 
@@ -53,7 +45,7 @@ public class BrowseBooksFragmentTest {
     public void loginBeforeBrowse() {
         // Log in as "tester" to reach BrowseBooksFragment
         typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.LoginButton)).perform(click());
+        onView(withId(R.id.CreateAccountButton)).perform(click());
     }
 
     /**

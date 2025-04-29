@@ -1,8 +1,4 @@
 package com.example.astudio;
-import android.os.IBinder;
-import android.view.WindowManager;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
@@ -16,7 +12,6 @@ import androidx.fragment.app.Fragment;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.model.UserManager;
 import com.example.astudio.view.LoginFragment;
@@ -61,7 +56,7 @@ public class LoginFragmentTest {
         typeTextAndCloseKeyboard(R.id.Text_username, testUser);
 
         // Click login
-        onView(withId(R.id.LoginButton))
+        onView(withId(R.id.CreateAccountButton))
                 .perform(click());
 
         activityRule.getScenario().onActivity(activity -> {

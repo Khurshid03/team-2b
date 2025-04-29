@@ -35,6 +35,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 /**
  * A Fragment that handles browsing and searching for books. It interacts with the Google Books API
  * to fetch top-rated and genre-specific books, and displays them in RecyclerViews.
@@ -45,8 +48,6 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     private FragmentBrowseBooksBinding binding;
     private BrowseBooksListener listener;
 
-    // Replace "YOUR_API_KEY" with your actual key or load it from configuration.
-    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
 
     // Instantiate the adapter with a lambda that delegates to the activity via the listener
     private final HotBookAdapter hotBookAdapter = new HotBookAdapter(book -> {
@@ -89,18 +90,25 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
 
-        String username = "";
-        if (getArguments() != null && getArguments().containsKey("username")) {
-            username = getArguments().getString("username");
-        }
+        String userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
 
-        if (username == null || username.isEmpty()) {
-            if (UserManager.getInstance().getCurrentUser() != null) {
-                username = UserManager.getInstance().getCurrentUser().getUsername();
-            }
+        if (userId != null) {
+            db.collection("Users").document(userId).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String username = documentSnapshot.getString("username");
+                            if (username != null && !username.isEmpty()) {
+                                binding.welcomeMessage.setText(getString(R.string.welcome_message, username));
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(getContext(), "Failed to load username", Toast.LENGTH_SHORT).show();
+                    });
         }
-        binding.welcomeMessage.setText(getString(R.string.welcome_message, username));
 
         //for searching books
         binding.goButton.setOnClickListener(v -> {
@@ -127,89 +135,28 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
         // Set up horizontal RecyclerView for genre buttons
         List<String> genres = Arrays.asList("Mystery", "Fiction", "Romance", "History", "Fantasy", "Science");
+
         GenreAdapter genreAdapter = new GenreAdapter(genres, v -> {
             String genre = ((Button) v).getText().toString();
-            fetchBooksByGenre(genre);
+            if (getActivity() instanceof ControllerActivity controller) {
+                controller.fetchBooksByGenre(genre, this);
+            }
         });
+
         binding.genreButtonRecycler.setLayoutManager(new LinearLayoutManager(getContext(),
                 LinearLayoutManager.HORIZONTAL, false));
         binding.genreButtonRecycler.setAdapter(genreAdapter);
 
-        fetchTopRatedBooks();
-        fetchBooksByGenre("Fiction");
+
+
+        // inside onViewCreated()
+        if (getActivity() instanceof ControllerActivity controller) {
+            controller.fetchTopRatedBooks(this);  // 'this' is BrowseBooksFragment implementing BrowseBooksUI
+            controller.fetchBooksByGenre("Fiction", this);
+        }
     }
 
-    /**
-     * Fetches the top-rated books from the Google Books API and updates the hot books RecyclerView.
-     * This method makes an asynchronous API call to fetch the books.
-     */
-    private void fetchTopRatedBooks() {
-        GoogleBooksApi api = RetrofitClient.getInstance();
-        api.searchBooks("top rated fiction", API_KEY, 10).enqueue(new Callback<BookResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Book> books = new ArrayList<>();
-                    for (BookResponse.Item item : response.body().items) {
-                        String title = item.volumeInfo.title;
-                        String thumb = item.volumeInfo.imageLinks != null
-                                ? item.volumeInfo.imageLinks.thumbnail : "";
-                        if (!thumb.isEmpty()) {
-                            thumb = thumb.replace("http://", "https://");
-                        }
-                        float rating = item.volumeInfo.averageRating != null ? item.volumeInfo.averageRating : 0f;
-                        String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "Unknown Author";
-                        String description = item.volumeInfo.description != null ? item.volumeInfo.description : "No description available";
-                        books.add(new Book(title, thumb, rating, author, description));
-                    }
-                    hotBookAdapter.updateData(books);
-                }
-            }
 
-            @Override
-            public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                Toast.makeText(getContext(), "Failed to load hot books", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    /**
-     * Fetches books of a specific genre from the Google Books API and updates the genre books RecyclerView.
-     * This method makes an asynchronous API call to fetch the books.
-     *
-     * @param genre The genre of books to be fetched.
-     */
-    private void fetchBooksByGenre(String genre) {
-        GoogleBooksApi api = RetrofitClient.getInstance();
-        api.searchBooks(genre, API_KEY, 12).enqueue(new Callback<BookResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Book> books = new ArrayList<>();
-                    for (BookResponse.Item item : response.body().items) {
-                        String title = item.volumeInfo.title;
-                        String thumb = item.volumeInfo.imageLinks != null
-                                ? item.volumeInfo.imageLinks.thumbnail : "";
-                        if (!thumb.isEmpty()) {
-                            thumb = thumb.replace("http://", "https://");
-                        }
-                        float rating = item.volumeInfo.averageRating != null ? item.volumeInfo.averageRating : 0f;
-                        String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "Unknown Author";
-                        String description = item.volumeInfo.description != null ? item.volumeInfo.description : "No description available";
-                        books.add(new Book(title, thumb, rating, author, description));
-                    }
-                    genreBookAdapter.updateData(books);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                Toast.makeText(getContext(), "Failed to load genre books", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
 
     @Override
     public void setListener(BrowseBooksListener listener) {
@@ -218,12 +165,17 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
     @Override
     public void updateHotBooks(List<Book> books) {
-
+        hotBookAdapter.updateData(books);
     }
 
     @Override
     public void updateGenreBooks(List<Book> books) {
+        genreBookAdapter.updateData(books);
+    }
 
+    @Override
+    public View getRootView() {
+        return binding != null ? binding.getRoot() : null;
     }
 
 

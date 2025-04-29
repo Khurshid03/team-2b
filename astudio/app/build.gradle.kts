@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -8,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.astudio"
-        minSdk = 24
+        minSdk = 31
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -27,8 +29,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -45,7 +47,7 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.navigation.runtime)
-    implementation(libs.androidx.espresso.contrib)
+    implementation(libs.firebase.auth)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -57,8 +59,14 @@ dependencies {
     implementation(libs.glide.v4160)
     annotationProcessor(libs.compiler.v4160)
 
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1"){
+        exclude("com.google.protobuf", "protobuf-lite");
+    }
 
     androidTestImplementation(libs.androidx.junit.v121)
     androidTestImplementation(libs.androidx.espresso.core.v361)
     androidTestImplementation(libs.androidx.fragment.testing)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
 }

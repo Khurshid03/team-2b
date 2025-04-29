@@ -4,10 +4,15 @@ package com.example.astudio.view;
  * Interface defining methods for displaying and interacting with book data in the Browse Books view.
  * It provides listeners for selecting books and genres, and updating the display of hot and genre-specific books.
  */
+import android.view.View;
+
 import com.example.astudio.model.Book;
 import java.util.List;
 
 public interface BrowseBooksUI {
+
+    View getRootView();
+
     /**
      * Listener interface for handling events related to book and genre selection.
      */

@@ -45,7 +45,7 @@ public class ViewBookFragmentTest {
     public void bookDetails_displayCorrectlyAfterClick() throws InterruptedException {
         // 1) Log in as "tester"
         typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.LoginButton)).perform(click());
+        onView(withId(R.id.CreateAccountButton)).perform(click());
         // wait for navigation
         Thread.sleep(1000);
 
@@ -69,7 +69,7 @@ public class ViewBookFragmentTest {
     public void showMoreToggle_changesText() throws InterruptedException {
         // Log in and navigate to view fragment
         typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.LoginButton)).perform(click());
+        onView(withId(R.id.CreateAccountButton)).perform(click());
         Thread.sleep(1000);
         onView(withId(R.id.hot_books_recycler))
             .perform(RecyclerViewActions.actionOnItemAtPosition(1, click()));

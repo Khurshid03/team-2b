@@ -13,6 +13,8 @@ public interface LoginUI {
          * @param username The username entered by the user.
          */
         void onLogin(String username);
+
+        void onLogin(String email, String password, LoginUI ui);
     }
 
     void setListener(LoginListener listener);

@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
+    android:background="@color/secondary"
     tools:context=".view.LoginFragment">
 
     <TextView
@@ -19,20 +20,9 @@
         android:textColor="@color/black"
         android:textSize="40sp" />
 
-    <EditText
-        android:id="@+id/Text_username"
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:autofillHints="username"
-        android:ems="12"
-        android:layout_marginTop="20dp"
-        android:inputType="textPersonName"
-        android:background="@drawable/search_input_border"
-        android:hint="@string/username" />
-
 
     <EditText
-        android:id="@+id/Email"
+        android:id="@+id/textEmail"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:autofillHints="Email"
@@ -42,6 +32,17 @@
         android:layout_marginTop="20dp"
         android:inputType="textEmailAddress"
         android:hint="@string/email" />
+
+    <EditText
+        android:id="@+id/textPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:autofillHints="password"
+        android:ems="12"
+        android:layout_marginTop="20dp"
+        android:inputType="textPassword"
+        android:background="@drawable/search_input_border"
+        android:hint="@string/password" />
 
 
     <androidx.appcompat.widget.AppCompatButton

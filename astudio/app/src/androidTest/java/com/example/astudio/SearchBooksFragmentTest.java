@@ -39,7 +39,7 @@ public class SearchBooksFragmentTest {
     public void loginAndOpenSearch() throws InterruptedException {
         // Log in
         typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.LoginButton)).perform(click());
+        onView(withId(R.id.CreateAccountButton)).perform(click());
         Thread.sleep(1000);
 
         // Show SearchBooksFragment
