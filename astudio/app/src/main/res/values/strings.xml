@@ -32,4 +32,8 @@
     <string name="password">password</string>
     <string name="already_have_an_account">Already have an account?</string>
     <string name="proceed_to_login">Proceed to Login</string>
+    <string name="profile_pic_desc">profile Pic</string>
+    <string name="Followers">Followers</string>
+    <string name="following">Following</string>
+    <string name="your_reviews">Your reviews</string>
 </resources>
