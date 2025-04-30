@@ -12,6 +12,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
         android:padding="16dp">
 
         <!-- Centered greeting -->
@@ -19,7 +20,7 @@
             android:id="@+id/tvGreeting"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/username"
+            android:text="@string/Hello"
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -57,6 +58,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/username"
+                android:textStyle="bold"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -66,22 +68,25 @@
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFollowers"
-                    android:layout_width="0dp"
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/followersButton"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_marginTop="40dp"
+                    android:padding="16dp"
+                    android:layout_marginEnd="70dp"
+                    android:layout_marginStart="30dp"
                     android:text="@string/Followers"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    android:background="@drawable/general_button" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFollowing"
-                    android:layout_width="0dp"
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/followingButton"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_marginTop="40dp"
+                    android:padding="16dp"
                     android:text="@string/following"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginStart="8dp" />
+                    android:background="@drawable/general_button" />
 
             </LinearLayout>
 

@@ -26,6 +26,7 @@ public class MainUI {
     private final FragmentActivity activity;
     private final View rootView;
     private final FragmentManager fragmentManager;
+    private final BottomNavigationView bottomNav;
 
     /**
      * Constructor method.
@@ -37,6 +38,9 @@ public class MainUI {
         this.fragmentManager = activity.getSupportFragmentManager();
         // Inflate your main UI layout that contains the fragment container and the BottomNavigationView.
         rootView = LayoutInflater.from(activity).inflate(R.layout.main, null);
+
+        bottomNav = rootView.findViewById(R.id.bottomNavigationView);
+
         initBottomNavigation();
     }
 
@@ -60,8 +64,10 @@ public class MainUI {
                 selectedFragment.setArguments(args);
                 // You may also set the listener for BrowseBooksFragment here if needed.
             }
-            // Else, add additional cases for other navigation items.
-            // e.g., if (id == R.id.nav_profile) { selectedFragment = new ProfileFragment(); }
+            else if (id == R.id.nav_profile) {
+                // For profile, create a new instance of ViewProfileFragment.
+                selectedFragment = new ViewProfileFragment();
+            }
 
             if (selectedFragment != null) {
                 // Replace the current fragment in the container.
@@ -83,6 +89,14 @@ public class MainUI {
         fragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, fragment)
                 .commit();
+
+        if (fragment instanceof LoginFragment
+                || fragment instanceof CreateAccountFragment) {
+            bottomNav.setVisibility(View.GONE);
+        } else {
+            bottomNav.setVisibility(View.VISIBLE);
+        }
+
     }
 
     /**
