@@ -1,15 +1,17 @@
 package com.example.astudio.model;
 
 import java.io.Serializable;
-import com.example.astudio.model.User;
 
 /**
  * Represents a review given by a user, containing the username, rating, and comment.
  */
 public class Review implements Serializable {
     private final String username;
-    private final float rating;
-    private final String comment;
+    private float rating;
+    private String comment;
+    private String reviewId;
+    private String bookId;
+
 
     /**
      * Constructs a Review object with the specified username, rating, and comment.
@@ -18,12 +20,14 @@ public class Review implements Serializable {
      * @param rating The rating given by the reviewer.
      * @param comment The comment provided by the reviewer.
      */
-    public Review(String username, float rating, String comment) {
+    public Review(String username, float rating, String comment, String reviewId, String bookId) {
         this.username = username;
         this.rating = rating;
         this.comment = comment;
-
+        this.reviewId = reviewId;
+        this.bookId = bookId;
     }
+
 
     /**
      * Returns the username of the reviewer.
@@ -51,5 +55,24 @@ public class Review implements Serializable {
     public String getComment() {
         return comment;
     }
+
+    /**
+     * Returns the review ID.
+     *
+     * @return The review ID.
+     */
+    public String getReviewId() {
+        return reviewId;
+    }
+
+    public void setReviewId(String reviewId) { this.reviewId = reviewId; }
+
+
+    public String getBookId() {return bookId; }
+
+    public void setBookId(String bookId) { this.bookId = bookId; }
+
+    public void setRating(float r) { this.rating = r; }
+    public void setComment(String c) { this.comment = c; }
 
 }

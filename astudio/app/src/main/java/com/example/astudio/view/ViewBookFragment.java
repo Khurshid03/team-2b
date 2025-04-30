@@ -15,6 +15,7 @@ import com.example.astudio.databinding.FragmentViewBookBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.Review;
 import com.example.astudio.model.UserManager;
+import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     public ViewBookFragment() {
         // Required empty public constructor.
     }
+
 
     /**
      * Called to create and inflate the view for this fragment.
@@ -80,7 +82,28 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             }
         }
 
-        reviewsAdapter = new ReviewsAdapter(reviews);
+        //reviewsAdapter = new ReviewsAdapter(reviews);
+        reviewsAdapter = new ReviewsAdapter(reviews, new ReviewActionListener() {
+            @Override
+            public void onEditReview(Review review, int pos) {
+                EditReviewDialogFragment dlg = EditReviewDialogFragment.newInstance(review);
+                dlg.setOnReviewEditedListener((newRating, newComment) -> {
+                    review.setRating(newRating);
+                    review.setComment(newComment);
+                    listener.onEditReviewRequested(selectedBook, review, ViewBookFragment.this);
+                });
+                dlg.show(getChildFragmentManager(), "EditReviewDialog");
+            }
+            @Override
+            public void onDeleteReview(Review review, int pos) {
+                new AlertDialog.Builder(requireContext())
+                        .setMessage(R.string.confirm_delete_review)
+                        .setPositiveButton(android.R.string.yes, (d,w) ->
+                                listener.onDeleteReviewRequested(selectedBook, review, ViewBookFragment.this))
+                        .setNegativeButton(android.R.string.no, null)
+                        .show();
+            }
+        });
         binding.reviewsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.reviewsRecycler.setAdapter(reviewsAdapter);
 
@@ -94,7 +117,13 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     private void openPostReviewDialog() {
         PostReviewDialogFragment dialog = new PostReviewDialogFragment();
         dialog.setOnReviewSubmittedListener((rating, comment) -> {
-            Review newReview = new Review(currentUsername, rating, comment);
+            Review newReview = new Review(
+                currentUsername,
+                rating,
+                comment,
+                "",                      // placeholder for reviewId, will be set by Firestore
+                selectedBook.getTitle()  // bookId, adjust if you have a book.getId() method
+            );
             if (listener != null && selectedBook != null) {
                 listener.onSubmitReview(selectedBook, newReview, this);
             }
@@ -155,6 +184,12 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         this.listener = listener;
     }
 
+
+    public interface ReviewActionListener {
+        void onEditReview(Review review, int position);
+        void onDeleteReview(Review review, int position);
+    }
+
     /**
      * Called when the view is destroyed. This method clears the binding object to prevent memory leaks.
      */
@@ -164,6 +199,9 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         binding = null;
     }
 
+
+
+
     // Inner adapter for reviews.
     /**
      * Adapter class for displaying the list of reviews in a RecyclerView.
@@ -172,8 +210,10 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     private static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
         private final List<Review> reviewList;
 
-        public ReviewsAdapter(List<Review> reviewList) {
-            this.reviewList = reviewList;
+        private final ReviewActionListener actionListener;
+        public ReviewsAdapter(List<Review> list, ReviewActionListener listener) {
+            this.reviewList = list;
+            this.actionListener = listener;
         }
 
         @NonNull
@@ -188,6 +228,11 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
             Review review = reviewList.get(position);
             holder.bind(review);
+
+            holder.editButton.setOnClickListener(v ->
+                    actionListener.onEditReview(review, position));
+            holder.deleteButton.setOnClickListener(v ->
+                    actionListener.onDeleteReview(review, position));
         }
 
         @Override
@@ -202,12 +247,16 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             private final android.widget.TextView usernameText;
             private final android.widget.RatingBar ratingBar;
             private final android.widget.TextView commentText;
+            final android.widget.ImageButton editButton;
+            final android.widget.ImageButton deleteButton;
 
             public ReviewViewHolder(@NonNull View itemView) {
                 super(itemView);
                 usernameText = itemView.findViewById(R.id.review_username);
                 ratingBar = itemView.findViewById(R.id.review_rating);
                 commentText = itemView.findViewById(R.id.review_comment);
+                editButton = itemView.findViewById(R.id.editReviewButton);
+                deleteButton = itemView.findViewById(R.id.deleteReviewButton);
             }
 
             /**

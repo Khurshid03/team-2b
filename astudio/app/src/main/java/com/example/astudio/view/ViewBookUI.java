@@ -35,6 +35,10 @@ public interface ViewBookUI {
          * @param viewBookUI The UI to update after reviews are fetched.
          */
         void fetchReviewsForBook(Book book, ViewBookUI viewBookUI);
+
+        void onEditReviewRequested(Book book, Review review, ViewBookUI viewBookUI);
+
+        void onDeleteReviewRequested(Book book, Review review, ViewBookUI viewBookUI);
     }
 
     /**

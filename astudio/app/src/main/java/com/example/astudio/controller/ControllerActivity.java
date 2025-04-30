@@ -22,6 +22,7 @@ import com.example.astudio.view.BrowseBooksUI;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +50,6 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     public MainUI mainUI;
     private final ReviewManager reviewManager = new ReviewManager();
-    private String currentUsername; // Store the logged-in user's username
-
     /**
      * This method is called when the activity is created. It initializes the UI and sets up the
      * default fragment (LoginFragment).
@@ -69,19 +68,6 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         CreateAccountFragment createAccountFragment = new CreateAccountFragment();
         createAccountFragment.setListener(this);
         this.mainUI.displayFragment(createAccountFragment);
-    }
-
-    /**
-     * This method is called by the LoginFragment when the user successfully logs in.
-     * It navigates to the home landing page (BrowseBooksFragment) and stores the username.
-     */
-    public void onLoginSuccess(String username) {
-        BrowseBooksFragment landingFragment = new BrowseBooksFragment();
-        Bundle args = new Bundle();
-        args.putString("username", username);
-        landingFragment.setArguments(args);
-        landingFragment.setListener(this);
-        mainUI.displayFragment(landingFragment);
     }
 
     /**
@@ -289,7 +275,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         reviewData.put("username", review.getUsername());
         reviewData.put("rating", review.getRating());
         reviewData.put("comment", review.getComment());
-        reviewData.put("timestamp", System.currentTimeMillis()); // Optional: to sort reviews later
+        reviewData.put("timestamp", System.currentTimeMillis());
 
         db.collection("Reviews")
                 .document(book.getTitle()) // Use book title as document ID for now (better would be a real ID)
@@ -326,7 +312,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                     String username = documentSnapshot.getString("username");
 
                     // Correct the username before posting
-                    Review correctedReview = new Review(username, newReview.getRating(), newReview.getComment());
+                    Review correctedReview = new Review(
+                        username,
+                        newReview.getRating(),
+                        newReview.getComment(),
+                        "",  // placeholder for reviewId, will be set by Firestore
+                        selectedBook.getTitle()  // or selectedBook.getId() if using a unique ID field
+                    );
 
                     reviewManager.postReview(selectedBook, correctedReview, new ReviewManager.OnReviewSavedListener() {
                         @Override
@@ -358,7 +350,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                         String username = document.getString("username");
                         float rating = document.getDouble("rating").floatValue();
                         String comment = document.getString("comment");
-                        Review review = new Review(username, rating, comment);
+                        Review review = new Review(
+                            username,
+                            rating,
+                            comment,
+                            document.getId(),
+                            book.getTitle()
+                        );
                         reviews.add(review);
                     }
                     viewBookUI.displayReviews(reviews); // New method in ViewBookUI to show reviews
@@ -367,4 +365,39 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                     Toast.makeText(ControllerActivity.this, "Failed to load reviews: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+
+
+    @Override
+    public void onEditReviewRequested(Book book, Review review, ViewBookUI viewUI) {
+        reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
+            @Override
+            public void onReviewUpdated() {
+                viewUI.displayReviews(Collections.emptyList());
+                fetchReviewsForBook(book, viewUI);
+            }
+            @Override
+            public void onReviewUpdateFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onDeleteReviewRequested(Book book, Review review, ViewBookUI viewUI) {
+        reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
+            @Override
+            public void onReviewDeleted() {
+                viewUI.displayReviews(Collections.emptyList());
+                fetchReviewsForBook(book, viewUI);
+            }
+            @Override
+            public void onReviewDeleteFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
 }
