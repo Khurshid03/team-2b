@@ -68,6 +68,10 @@ public class MainUI {
                 // For profile, create a new instance of ViewProfileFragment.
                 selectedFragment = new ViewProfileFragment();
             }
+            else if (id == R.id.nav_saved_books) {
+                // For saved books, create a new instance of ViewSavedBooksFragment.
+                selectedFragment = new ViewSavedBooks();
+            }
 
             if (selectedFragment != null) {
                 // Replace the current fragment in the container.
