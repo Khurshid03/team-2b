@@ -404,6 +404,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         });
     }
 
+
     public void fetchUserReviews(String username, ViewProfileUI ui) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collectionGroup("UserReviews")                  // ← CORRECT sub-collection name
@@ -433,6 +434,35 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                     Toast.makeText(this, "Error loading user reviews: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
 
+    }
+
+
+
+    public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
+            @Override
+            public void onReviewUpdated() {
+            }
+            @Override
+            public void onReviewUpdateFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Update failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
+            @Override
+            public void onReviewDeleted() {
+            }
+            @Override
+            public void onReviewDeleteFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Delete failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 

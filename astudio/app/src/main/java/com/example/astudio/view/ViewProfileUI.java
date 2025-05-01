@@ -19,4 +19,7 @@ public interface ViewProfileUI {
     void onEditReview(Review review, int position);
 
     void onDeleteReview(Review review, int position);
+
+    void onEditUserReviewRequested(String username, Review review, ViewProfileUI ui);
+    void onDeleteUserReviewRequested(String username, Review review, ViewProfileUI ui);
 }
