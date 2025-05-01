@@ -11,6 +11,7 @@ public class Review implements Serializable {
     private String comment;
     private String reviewId;
     private String bookId;
+    private String thumbnailUrl;
 
 
     /**
@@ -20,12 +21,13 @@ public class Review implements Serializable {
      * @param rating The rating given by the reviewer.
      * @param comment The comment provided by the reviewer.
      */
-    public Review(String username, float rating, String comment, String reviewId, String bookId) {
+    public Review(String username, float rating, String comment, String reviewId, String bookId, String thumbnailUrl) {
         this.username = username;
         this.rating = rating;
         this.comment = comment;
         this.reviewId = reviewId;
         this.bookId = bookId;
+        this.thumbnailUrl = thumbnailUrl;
     }
 
 
@@ -64,6 +66,9 @@ public class Review implements Serializable {
     public String getReviewId() {
         return reviewId;
     }
+
+    public String getThumbnailUrl() { return thumbnailUrl; }
+    public void setThumbnailUrl(String url) { this.thumbnailUrl = url; }
 
     public void setReviewId(String reviewId) { this.reviewId = reviewId; }
 

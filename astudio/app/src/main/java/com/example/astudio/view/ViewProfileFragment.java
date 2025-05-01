@@ -1,66 +1,98 @@
 package com.example.astudio.view;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.RatingBar;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.astudio.R;
+import com.example.astudio.controller.ControllerActivity;
+import com.example.astudio.databinding.FragmentViewProfileBinding;
+import com.example.astudio.model.Review;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.astudio.view.UserReviewsAdapter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link ViewProfileFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Fragment to display the user's profile, including their username and reviews.
  */
-public class ViewProfileFragment extends Fragment {
+public class ViewProfileFragment extends Fragment implements ViewProfileUI, UserReviewsAdapter.ReviewActionListener {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private FragmentViewProfileBinding binding;
+    private UserReviewsAdapter reviewsAdapter;
+    private final List<Review> userReviews = new ArrayList<>();
+    private ControllerActivity controller;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public ViewProfileFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment ViewProfileFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static ViewProfileFragment newInstance(String param1, String param2) {
-        ViewProfileFragment fragment = new ViewProfileFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentViewProfileBinding.inflate(inflater, container, false);
+        controller = (ControllerActivity) getActivity();
+        return binding.getRoot();
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            String uid = currentUser.getUid();
+
+            FirebaseFirestore.getInstance()
+                    .collection("Users")
+                    .document(uid)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String username = documentSnapshot.getString("username");
+                            binding.tvUsername.setText("Username: " + username);
+                            if (controller != null) {
+                                controller.fetchUserReviews(username, this);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        binding.tvUsername.setText("Username: Unknown");
+                    });
         }
+
+        reviewsAdapter = new UserReviewsAdapter(userReviews, this);
+        binding.Reviews.setLayoutManager(new LinearLayoutManager(getContext()));
+        binding.Reviews.setAdapter(reviewsAdapter);
+
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_view_profile, container, false);
+    public void displayUserReviews(List<Review> reviews) {
+        userReviews.clear();
+        userReviews.addAll(reviews);
+        reviewsAdapter.notifyDataSetChanged();
     }
+
+    @Override
+    public void onEditReview(Review review, int position) {
+        // You can implement opening an edit dialog and delegate update to the controller
+    }
+
+    @Override
+    public void onDeleteReview(Review review, int position) {
+
+    }
+
 }
+
+
+

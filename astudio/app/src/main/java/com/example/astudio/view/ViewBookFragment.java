@@ -121,8 +121,9 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
                 currentUsername,
                 rating,
                 comment,
-                "",                      // placeholder for reviewId, will be set by Firestore
-                selectedBook.getTitle()  // bookId, adjust if you have a book.getId() method
+                    "",
+                    selectedBook.getTitle(),
+                    selectedBook.getThumbnailUrl()
             );
             if (listener != null && selectedBook != null) {
                 listener.onSubmitReview(selectedBook, newReview, this);
@@ -207,7 +208,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
      * Adapter class for displaying the list of reviews in a RecyclerView.
      * Each review contains the username, rating, and comment.
      */
-    private static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
+    static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
         private final List<Review> reviewList;
 
         private final ReviewActionListener actionListener;
