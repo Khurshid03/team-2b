@@ -41,5 +41,7 @@
     <string name="following">Following: </string>
     <string name="your_reviews">Your reviews</string>
     <string name="Hello">Hello, %1$s!</string>
+    <string name="saved_books_button">Saved Books</string>
+    <string name="your_saved_books">Your Saved Books</string>
 
 </resources>

@@ -6,6 +6,11 @@
         android:title=""
         android:contentDescription="@string/home_button" />
     <item
+        android:id="@+id/nav_saved_books"
+        android:icon="@drawable/nav_saved_books"
+        android:title=""
+        android:contentDescription="@string/saved_books_button" />
+    <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/nav_profile"
         android:title=""
