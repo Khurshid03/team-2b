@@ -69,7 +69,6 @@ public class MainUI {
                 selectedFragment = new ViewProfileFragment();
             }
 
-
             if (selectedFragment != null) {
                 // Replace the current fragment in the container.
                 fragmentManager.beginTransaction()
