@@ -38,14 +38,6 @@
             android:background="@drawable/search_input_border"
             android:inputType="textMultiLine" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/dialog_submit_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/general_button"
-            android:layout_marginTop="20dp"
-            android:layout_gravity="center"
-            android:text="@string/post_review" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -29,10 +29,12 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.example.astudio.view.ViewBookUI;
+import com.example.astudio.view.ViewProfileUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -276,6 +278,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         reviewData.put("rating", review.getRating());
         reviewData.put("comment", review.getComment());
         reviewData.put("timestamp", System.currentTimeMillis());
+        reviewData.put("thumbnailUrl", book.getThumbnailUrl());
 
         db.collection("Reviews")
                 .document(book.getTitle()) // Use book title as document ID for now (better would be a real ID)
@@ -317,7 +320,8 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                         newReview.getRating(),
                         newReview.getComment(),
                         "",  // placeholder for reviewId, will be set by Firestore
-                        selectedBook.getTitle()  // or selectedBook.getId() if using a unique ID field
+                        selectedBook.getTitle(), // or selectedBook.getId() if using a unique ID field
+                        selectedBook.getThumbnailUrl() // Assuming thumbnail URL is part of the book object
                     );
 
                     reviewManager.postReview(selectedBook, correctedReview, new ReviewManager.OnReviewSavedListener() {
@@ -355,7 +359,8 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                             rating,
                             comment,
                             document.getId(),
-                            book.getTitle()
+                            book.getTitle(),
+                            document.getString("thumbnailUrl") // Assuming thumbnail URL is stored in the review
                         );
                         reviews.add(review);
                     }
@@ -395,6 +400,67 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             public void onReviewDeleteFailed(Exception e) {
                 Toast.makeText(ControllerActivity.this,
                         "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    public void fetchUserReviews(String username, ViewProfileUI ui) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collectionGroup("UserReviews")                  // ← CORRECT sub-collection name
+                .whereEqualTo("username", username)              // ← server-side filter
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    List<Review> userReviews = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots) {
+                        String thumb = doc.getString("thumbnailUrl");
+                        float rating  = doc.getDouble("rating").floatValue();
+                        String comment  = doc.getString("comment");
+                        String reviewId = doc.getId();
+                        String bookId   = doc.getReference()
+                                .getParent()            // UserReviews
+                                .getParent()            // Reviews/{bookId}
+                                .getId();
+                        userReviews.add(new Review(username,
+                                rating,
+                                comment,
+                                reviewId,
+                                bookId,thumb));
+                    }
+                    ui.displayUserReviews(userReviews);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ProfileFetch", "FAILED", e);
+                    Toast.makeText(this, "Error loading user reviews: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+
+    }
+
+
+
+    public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
+            @Override
+            public void onReviewUpdated() {
+            }
+            @Override
+            public void onReviewUpdateFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Update failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
+            @Override
+            public void onReviewDeleted() {
+            }
+            @Override
+            public void onReviewDeleteFailed(Exception e) {
+                Toast.makeText(ControllerActivity.this,
+                        "Delete failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -43,5 +43,8 @@
     <string name="Hello">Hello, %1$s!</string>
     <string name="saved_books_button">Saved Books</string>
     <string name="your_saved_books">Your Saved Books</string>
+    <string name="profile_edit_review_button">profile edit review button</string>
+    <string name="profile_delete_review_button">Profile delete review button</string>
+    <string name="book_cover_for_profile_review">Book cover for profile review</string>
 
 </resources>
