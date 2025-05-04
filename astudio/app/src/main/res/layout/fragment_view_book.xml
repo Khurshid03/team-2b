@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -16,10 +17,10 @@
             android:layout_width="150dp"
             android:layout_height="220dp"
             android:layout_marginTop="20dp"
+            android:contentDescription="@string/book_cover"
             android:scaleType="centerCrop"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:contentDescription="@string/book_cover" />
+            app:layout_constraintTop_toTopOf="parent" />
 
 
         <TextView
@@ -64,6 +65,19 @@
             app:layout_constraintTop_toBottomOf="@id/book_author"
             app:layout_constraintStart_toStartOf="@id/book_title" />
 
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/saved_books_button"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/nav_saved_books"
+            app:layout_constraintBottom_toTopOf="@+id/book_description"
+            app:layout_constraintEnd_toStartOf="@+id/post_review_button"
+            app:layout_constraintHorizontal_bias="0.893"
+            app:layout_constraintStart_toStartOf="@+id/book_cover"
+            app:layout_constraintTop_toBottomOf="@+id/book_rating"
+            app:layout_constraintVertical_bias="0.2" />
+
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/post_review_button"
             android:layout_width="120dp"
@@ -75,8 +89,10 @@
             android:textColor="@color/black"
             app:layout_constraintBottom_toTopOf="@+id/book_description"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.304"
             app:layout_constraintStart_toStartOf="@+id/book_title"
-            app:layout_constraintTop_toBottomOf="@+id/book_rating" />
+            app:layout_constraintTop_toBottomOf="@+id/book_rating"
+            app:layout_constraintVertical_bias="0.326" />
 
         <TextView
             android:id="@+id/book_description"

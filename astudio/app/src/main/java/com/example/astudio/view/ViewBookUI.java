@@ -53,6 +53,7 @@ public interface ViewBookUI {
      *
      * @param book The book whose details are to be displayed.
      */
+
     void updateBookDetails(Book book);
 
     /**
