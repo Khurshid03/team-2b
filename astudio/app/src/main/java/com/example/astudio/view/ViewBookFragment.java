@@ -1,9 +1,14 @@
 package com.example.astudio.view;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -36,9 +41,23 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     private ReviewsAdapter reviewsAdapter;
     private String currentUsername;
 
+
+    private boolean isSaved = false;
+
     public ViewBookFragment() {
         // Required empty public constructor.
     }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if (context instanceof ViewBookListener) {
+            listener = (ViewBookListener) context;
+        } else {
+            throw new IllegalStateException("Host must implement ViewBookListener");
+        }
+    }
+
 
 
     /**
@@ -108,6 +127,19 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         binding.reviewsRecycler.setAdapter(reviewsAdapter);
 
         binding.postReviewButton.setOnClickListener(v -> openPostReviewDialog());
+
+
+// Ask controller “is it saved?” so onBookSaveState(...) will run
+        listener.isBookSaved(selectedBook, this);
+
+// Now handle taps
+        binding.savedBooksButton.setOnClickListener(v -> {
+            if (isSaved) {
+                listener.removeSavedBook(selectedBook, this);
+            } else {
+                listener.saveBook(selectedBook, this);
+            }
+        });
     }
 
     /**
@@ -271,5 +303,43 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
                 ratingBar.setRating(review.getRating());
             }
         }
+    }
+
+    /** Called when ControllerActivity reports the book’s save/unsave result */
+    @Override
+    public void onBookSaveState(boolean saved) {
+        // 1) Update the field
+        this.isSaved = saved;
+
+        // 2) Then drive your UI off that same field
+        binding.savedBooksButton.setBackgroundTintList(
+                ColorStateList.valueOf(
+                        isSaved
+                                ? getResources().getColor(R.color.secondary)
+                                : getResources().getColor(R.color.white)
+                )
+        );
+        binding.savedBooksButton.setStrokeColor(
+                ColorStateList.valueOf(
+                        isSaved
+                                ? getResources().getColor(R.color.main)
+                                : getResources().getColor(R.color.main)
+                )
+        );
+        binding.savedBooksButton.setText(
+                isSaved
+                        ? getString(R.string.saved)
+                        : getString(R.string.save)
+        );
+        binding.savedBooksButton.setIconResource(
+                isSaved
+                        ? R.drawable.ic_bookmark_filled
+                        : R.drawable.ic_bookmark_outline
+        );
+    }
+
+    @Override
+    public void onBookSaveError(String message) {
+        Toast.makeText(getContext(), "Save error: " + message, Toast.LENGTH_SHORT).show();
     }
 }

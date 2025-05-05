@@ -5,16 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.example.astudio.R;
-import com.example.astudio.databinding.MainBinding;
 import com.example.astudio.model.UserManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -70,7 +65,7 @@ public class MainUI {
             }
             else if (id == R.id.nav_saved_books) {
                 // For saved books, create a new instance of ViewSavedBooksFragment.
-                selectedFragment = new ViewSavedBooks();
+                selectedFragment = new ViewSavedBooksFragment();
             }
 
             if (selectedFragment != null) {

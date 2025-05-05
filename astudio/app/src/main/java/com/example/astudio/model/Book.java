@@ -9,11 +9,12 @@ import java.io.Serializable;
 public class Book implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final String title;
+    private String title;
     private String thumbnailUrl;
     private float rating;
     private String author;
     private String description;
+    public Book() {}
 
     /**
      * Constructor to initialize a Book object.
@@ -71,4 +72,8 @@ public class Book implements Serializable {
     public String getDescription() {
         return description;
     }
+
+
+    public void setThumbnailUrl(String url) { this.thumbnailUrl = url; }
+    public void setRating(float r)          { this.rating = r; }
 }

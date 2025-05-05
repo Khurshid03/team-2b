@@ -30,7 +30,9 @@ import java.util.Objects;
 
 import com.example.astudio.view.ViewBookUI;
 import com.example.astudio.view.ViewProfileUI;
+import com.example.astudio.view.ViewSavedBooksUI;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -463,6 +465,69 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                         "Delete failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+
+
+    public void fetchSavedBooks(ViewSavedBooksUI ui) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) { ui.showError("Not signed in"); return; }
+        String uid = user.getUid();
+
+        FirebaseFirestore.getInstance()
+                .collection("Users").document(uid)
+                .collection("SavedBooks")
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    List<Book> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots) {
+                        list.add(doc.toObject(Book.class));
+                    }
+                    ui.displaySavedBooks(list);
+                })
+                .addOnFailureListener(e -> ui.showError(e.getMessage()));
+    }
+
+
+    public void saveBook(Book book, ViewBookUI ui) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) { ui.onBookSaveError("Not signed in"); return; }
+        String uid = user.getUid();
+
+        FirebaseFirestore.getInstance()
+                .collection("Users").document(uid)
+                .collection("SavedBooks").document(book.getTitle())
+                .set(book)
+                .addOnSuccessListener(a -> ui.onBookSaveState(true))
+                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
+    }
+
+
+    public void removeSavedBook(Book book, ViewBookUI ui) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) { ui.onBookSaveError("Not signed in"); return; }
+        String uid = user.getUid();
+
+        FirebaseFirestore.getInstance()
+                .collection("Users").document(uid)
+                .collection("SavedBooks").document(book.getTitle())
+                .delete()
+                .addOnSuccessListener(a -> ui.onBookSaveState(false))
+                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
+    }
+
+
+    public void isBookSaved(Book book, ViewBookUI ui) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) { ui.onBookSaveState(false); return; }
+        String uid = user.getUid();
+
+        FirebaseFirestore.getInstance()
+                .collection("Users").document(uid)
+                .collection("SavedBooks").document(book.getTitle())
+                .get()
+                .addOnSuccessListener(doc -> ui.onBookSaveState(doc.exists()))
+                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
     }
 
 

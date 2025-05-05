@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:background="@color/secondary"
     android:padding="16dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -66,23 +67,37 @@
             app:layout_constraintStart_toStartOf="@id/book_title" />
 
 
-        <androidx.appcompat.widget.AppCompatButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/saved_books_button"
-            android:layout_width="45dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/nav_saved_books"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="30dp"
+            android:minWidth="0dp"
+            android:text="@string/save"
+            android:textAllCaps="false"
+            android:textColor="@color/main"
+            app:backgroundTint="@color/white"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_bookmark_outline"
+            app:iconGravity="textStart"
+            app:iconTint="@color/main"
             app:layout_constraintBottom_toTopOf="@+id/book_description"
-            app:layout_constraintEnd_toStartOf="@+id/post_review_button"
-            app:layout_constraintHorizontal_bias="0.893"
-            app:layout_constraintStart_toStartOf="@+id/book_cover"
-            app:layout_constraintTop_toBottomOf="@+id/book_rating"
-            app:layout_constraintVertical_bias="0.2" />
+            app:layout_constraintEnd_toStartOf="@id/post_review_button"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toEndOf="@id/book_cover"
+            app:layout_constraintTop_toBottomOf="@id/book_rating"
+            app:layout_constraintVertical_bias="0.182"
+            app:strokeColor="@color/main"
+            app:strokeWidth="1dp"
+            app:useMaterialThemeColors="false" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/post_review_button"
             android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="70dp"
+            android:layout_marginStart="80dp"
             android:layout_marginBottom="30dp"
             android:background="@drawable/general_button"
             android:text="@string/add_review"

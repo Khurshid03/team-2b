@@ -39,6 +39,11 @@ public interface ViewBookUI {
         void onEditReviewRequested(Book book, Review review, ViewBookUI viewBookUI);
 
         void onDeleteReviewRequested(Book book, Review review, ViewBookUI viewBookUI);
+
+        // In ViewBookUI.java, inside public interface ViewBookListener { … }
+        void saveBook(Book book, ViewBookUI ui);
+        void removeSavedBook(Book book, ViewBookUI ui);
+        void isBookSaved(Book book, ViewBookUI ui);
     }
 
     /**
@@ -69,4 +74,8 @@ public interface ViewBookUI {
      * @param reviews A list of reviews fetched from Firestore.
      */
     void displayReviews(List<Review> reviews);
+
+    void onBookSaveState(boolean b);
+
+    void onBookSaveError(String message);
 }

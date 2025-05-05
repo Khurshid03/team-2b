@@ -46,5 +46,7 @@
     <string name="profile_edit_review_button">profile edit review button</string>
     <string name="profile_delete_review_button">Profile delete review button</string>
     <string name="book_cover_for_profile_review">Book cover for profile review</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
 
 </resources>
