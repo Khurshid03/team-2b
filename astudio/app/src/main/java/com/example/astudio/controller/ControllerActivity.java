@@ -183,7 +183,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
 
 
-    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
+    private static final String API_KEY = "PUT_KEY_HERE";
 
     /**
      * Fetches the top-rated books from the Google Books API and updates the hot books RecyclerView.
