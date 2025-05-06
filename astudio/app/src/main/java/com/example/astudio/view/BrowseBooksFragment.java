@@ -97,16 +97,22 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
         if (userId != null) {
             db.collection("Users").document(userId).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            String username = documentSnapshot.getString("username");
-                            if (username != null && !username.isEmpty()) {
-                                binding.welcomeMessage.setText(getString(R.string.welcome_message, username));
-                            }
-                        }
+                    .addOnSuccessListener(doc -> {
+                        // 1) Bail out if fragment is gone or view destroyed
+                        if (!isAdded() || binding == null) return;
+
+                        String username = doc.getString("username");
+                        // 2) Safely format your string with the context you know is still valid
+                        String welcome = requireContext().getString(
+                                R.string.welcome_message, username
+                        );
+                        binding.welcomeMessage.setText(welcome);
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(getContext(), "Failed to load username", Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        Toast.makeText(getContext(),
+                                "Failed to load username", Toast.LENGTH_SHORT
+                        ).show();
                     });
         }
 

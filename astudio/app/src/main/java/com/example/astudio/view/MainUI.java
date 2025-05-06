@@ -10,108 +10,115 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.example.astudio.R;
-import com.example.astudio.SearchUsersFragment;
+import com.example.astudio.databinding.MainBinding;
 import com.example.astudio.model.UserManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
- * Class to manage components shared among all screens and the fragments being displayed.
+ * MainUI handles the shared layout with a fragment container and bottom navigation.
  */
 public class MainUI {
-
     private final FragmentActivity activity;
     private final View rootView;
     private final FragmentManager fragmentManager;
     private final BottomNavigationView bottomNav;
+    private static final int CONTAINER_ID = R.id.fragmentContainerView;
 
-    /**
-     * Constructor method.
-     *
-     * @param activity The activity this UI is associated with.
-     */
     public MainUI(FragmentActivity activity) {
         this.activity = activity;
         this.fragmentManager = activity.getSupportFragmentManager();
-        // Inflate your main UI layout that contains the fragment container and the BottomNavigationView.
-        rootView = LayoutInflater.from(activity).inflate(R.layout.main, null);
+        this.rootView = LayoutInflater.from(activity).inflate(R.layout.main, null, false);
+        this.bottomNav = rootView.findViewById(R.id.bottomNavigationView);
+        setupBottomNavigation();
+        // Load home by default without adding to back stack
+        navigateToHome(false);
+    }
 
-        bottomNav = rootView.findViewById(R.id.bottomNavigationView);
-
-        initBottomNavigation();
+    @NonNull
+    public View getRootView() {
+        return rootView;
     }
 
     /**
-     * Initializes the BottomNavigationView and sets up the listener for navigation item selection.
+     * Programmatically display a fragment (e.g. after login)
      */
-    private void initBottomNavigation() {
-        BottomNavigationView bottomNavigationView = rootView.findViewById(R.id.bottomNavigationView);
-        bottomNavigationView.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
+    public void displayFragment(Fragment fragment) {
+        showFragment(fragment, false);
+        // Show or hide bottom nav for auth screens
+        if (fragment instanceof LoginFragment || fragment instanceof CreateAccountFragment) {
+            bottomNav.setVisibility(View.GONE);
+        } else {
+            bottomNav.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Set up bottom navigation item selected listener using if-else (no switch)
+     */
+    private void setupBottomNavigation() {
+        bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-
             if (id == R.id.nav_home) {
-                // For home, create a new instance of BrowseBooksFragment.
-                selectedFragment = new BrowseBooksFragment();
-                // Optionally pass the username from UserManager:
-                String username = (UserManager.getInstance().getCurrentUser() != null)
-                        ? UserManager.getInstance().getCurrentUser().getUsername() : "";
-                Bundle args = new Bundle();
-                args.putString("username", username);
-                selectedFragment.setArguments(args);
-                // You may also set the listener for BrowseBooksFragment here if needed.
-            }
-            else if (id == R.id.nav_profile) {
-                // For profile, create a new instance of ViewProfileFragment.
-                selectedFragment = new ViewProfileFragment();
-            }
-            else if (id == R.id.nav_saved_books) {
-                // For saved books, create a new instance of ViewSavedBooksFragment.
-                selectedFragment = new ViewSavedBooksFragment();
-            }
-            else if (id == R.id.search_users) {
-                // For search users, create a new instance of SearchUsersFragment.
-                selectedFragment = new SearchUsersFragment();
-            }
-
-
-
-            if (selectedFragment != null) {
-                // Replace the current fragment in the container.
-                fragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainerView, selectedFragment, "MAIN_FRAGMENT")
-                        .commit();
+                navigateToHome(true);
+                return true;
+            } else if (id == R.id.nav_profile) {
+                navigateToProfile(true);
+                return true;
+            } else if (id == R.id.nav_saved_books) {
+                navigateToSavedBooks(true);
+                return true;
+            } else if (id == R.id.search_users) {
+                navigateToSearchUsers(true);
                 return true;
             }
             return false;
         });
     }
 
-    /**
-     * Replaces the current fragment with the one passed in.
-     *
-     * @param fragment The fragment to display.
-     */
-    public void displayFragment(Fragment fragment) {
-        fragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerView, fragment)
-                .commit();
-
-        if (fragment instanceof LoginFragment
-                || fragment instanceof CreateAccountFragment) {
-            bottomNav.setVisibility(View.GONE);
-        } else {
-            bottomNav.setVisibility(View.VISIBLE);
+    private void navigateToHome(boolean addToBackStack) {
+        BrowseBooksFragment browse = new BrowseBooksFragment();
+        Bundle args = new Bundle();
+        args.putString("username", getCurrentUsername());
+        browse.setArguments(args);
+        if (activity instanceof BrowseBooksUI.BrowseBooksListener) {
+            browse.setListener((BrowseBooksUI.BrowseBooksListener) activity);
         }
+        showFragment(browse, addToBackStack);
+    }
 
+    private void navigateToProfile(boolean addToBackStack) {
+        ViewProfileFragment profile = new ViewProfileFragment();
+        Bundle args = new Bundle();
+        args.putString("username", getCurrentUsername());
+        profile.setArguments(args);
+        showFragment(profile, addToBackStack);
+    }
+
+    private void navigateToSavedBooks(boolean addToBackStack) {
+        ViewSavedBooksFragment saved = new ViewSavedBooksFragment();
+        showFragment(saved, addToBackStack);
+    }
+
+    private void navigateToSearchUsers(boolean addToBackStack) {
+        SearchUsersFragment search = new SearchUsersFragment();
+        showFragment(search, addToBackStack);
     }
 
     /**
-     * Gets the root view to attach in setContentView().
-     *
-     * @return The root View of this UI.
+     * Perform the fragment transaction.
      */
-    @NonNull
-    public View getRootView() {
-        return rootView;
+    private void showFragment(Fragment fragment, boolean addToBackStack) {
+        var transaction = fragmentManager.beginTransaction()
+                .replace(CONTAINER_ID, fragment);
+        if (addToBackStack) transaction.addToBackStack(null);
+        transaction.commit();
+    }
+
+    /**
+     * Retrieve the signed-in username or empty string
+     */
+    private String getCurrentUsername() {
+        var user = UserManager.getInstance().getCurrentUser();
+        return (user != null) ? user.getUsername() : "";
     }
 }

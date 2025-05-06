@@ -1,4 +1,5 @@
 package com.example.astudio.controller;
+
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -9,6 +10,7 @@ import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
 import com.example.astudio.model.Review;
 import com.example.astudio.model.ReviewManager;
+import com.example.astudio.model.User;
 import com.example.astudio.network.GoogleBooksApi;
 import com.example.astudio.network.RetrofitClient;
 import com.example.astudio.view.BrowseBooksFragment;
@@ -31,8 +33,11 @@ import java.util.Objects;
 import com.example.astudio.view.ViewBookUI;
 import com.example.astudio.view.ViewProfileUI;
 import com.example.astudio.view.ViewSavedBooksUI;
+import com.example.astudio.view.ViewSearchUsersUI;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -318,12 +323,12 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
                     // Correct the username before posting
                     Review correctedReview = new Review(
-                        username,
-                        newReview.getRating(),
-                        newReview.getComment(),
-                        "",  // placeholder for reviewId, will be set by Firestore
-                        selectedBook.getTitle(), // or selectedBook.getId() if using a unique ID field
-                        selectedBook.getThumbnailUrl() // Assuming thumbnail URL is part of the book object
+                            username,
+                            newReview.getRating(),
+                            newReview.getComment(),
+                            "",  // placeholder for reviewId, will be set by Firestore
+                            selectedBook.getTitle(), // or selectedBook.getId() if using a unique ID field
+                            selectedBook.getThumbnailUrl() // Assuming thumbnail URL is part of the book object
                     );
 
                     reviewManager.postReview(selectedBook, correctedReview, new ReviewManager.OnReviewSavedListener() {
@@ -357,12 +362,12 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                         float rating = document.getDouble("rating").floatValue();
                         String comment = document.getString("comment");
                         Review review = new Review(
-                            username,
-                            rating,
-                            comment,
-                            document.getId(),
-                            book.getTitle(),
-                            document.getString("thumbnailUrl") // Assuming thumbnail URL is stored in the review
+                                username,
+                                rating,
+                                comment,
+                                document.getId(),
+                                book.getTitle(),
+                                document.getString("thumbnailUrl") // Assuming thumbnail URL is stored in the review
                         );
                         reviews.add(review);
                     }
@@ -530,5 +535,98 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
     }
 
+
+
+    // A) Search users by prefix
+    public void searchUsers(String query, ViewSearchUsersUI ui) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("Users")
+                .orderBy("username")
+                .startAt(query)
+                .endAt(query + "\uf8ff")
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    List<User> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots) {
+                        User u = doc.toObject(User.class);
+                        u.setId(doc.getId()); // Make sure User model has setId
+                        list.add(u);
+                    }
+                    ui.displaySearchResults(list);
+                })
+                .addOnFailureListener(e -> ui.showSearchError(e.getMessage()));
+    }
+
+    // B) Follow / unfollow a user
+    public void followUser(String targetUserId, boolean follow, ViewSearchUsersUI ui) {
+        String me = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        CollectionReference followCol = FirebaseFirestore.getInstance()
+                .collection("Users").document(me)
+                .collection("Following");
+
+        Task<Void> task = follow
+                ? followCol.document(targetUserId).set(Collections.singletonMap("since", System.currentTimeMillis()))
+                : followCol.document(targetUserId).delete();
+
+        task.addOnSuccessListener(a -> {/* no UI callback needed here; adapter will update */}
+                )
+                .addOnFailureListener(e -> ui.showSearchError("Follow error: " + e.getMessage()));
+    }
+
+
+    public interface OnFollowingFetchedListener {
+        void onFetched(List<String> followingUids);
+        void onError(String error);
+    }
+
+    public void fetchFollowingUids(String myUid, OnFollowingFetchedListener l) {
+        FirebaseFirestore.getInstance()
+                .collection("Users").document(myUid)
+                .collection("Following")       // or whatever you called it
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    List<String> uids = new ArrayList<>();
+                    for (DocumentSnapshot d: snapshots) {
+                        uids.add(d.getId());
+                    }
+                    l.onFetched(uids);
+                })
+                .addOnFailureListener(e -> l.onError(e.getMessage()));
+    }
+
+    // Interface for fetching user profile
+    public interface OnUserProfileFetchedListener {
+        void onFetched(User user);
+        void onError(String error);
+    }
+
+    /**
+     * Fetches a user's profile details from Firestore based on their User ID.
+     *
+     * @param userId The ID of the user whose profile to fetch.
+     * @param listener The listener to handle the fetch result.
+     */
+    public void fetchUserProfile(String userId, OnUserProfileFetchedListener listener) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("Users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null) {
+                            user.setId(documentSnapshot.getId()); // Set the ID from the document
+                            listener.onFetched(user);
+                        } else {
+                            listener.onError("Failed to parse user data.");
+                        }
+                    } else {
+                        listener.onFetched(null); // User document not found
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ControllerActivity", "Error fetching user profile", e);
+                    listener.onError(e.getMessage());
+                });
+    }
 
 }
