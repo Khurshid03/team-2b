@@ -36,6 +36,7 @@ public class ViewProfileFragment extends Fragment implements ViewProfileUI, User
     private final List<Review> userReviews = new ArrayList<>();
     private ControllerActivity controller;
     private String profileUserId; // Store the UID of the profile being viewed
+    private String currentUserId; // Store the UID of the currently logged-in user
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -50,6 +51,17 @@ public class ViewProfileFragment extends Fragment implements ViewProfileUI, User
         super.onViewCreated(view, savedInstanceState);
         Log.d(TAG, "onViewCreated");
 
+        // Get the current logged-in user's UID
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            currentUserId = currentUser.getUid();
+            Log.d(TAG, "Current logged-in user ID: " + currentUserId);
+        } else {
+            currentUserId = null;
+            Log.w(TAG, "No user currently logged in.");
+        }
+
+
         // Get the user ID from arguments
         Bundle args = getArguments();
         if (args != null && args.containsKey("userId")) {
@@ -59,9 +71,8 @@ public class ViewProfileFragment extends Fragment implements ViewProfileUI, User
 
         // If no user ID is supplied in arguments, default to the currently signed-in user's ID
         if (profileUserId == null) {
-            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-            if (currentUser != null) {
-                profileUserId = currentUser.getUid();
+            if (currentUserId != null) {
+                profileUserId = currentUserId;
                 Log.d(TAG, "Profile User ID defaulted to current user: " + profileUserId);
             } else {
                 // Handle case where no user is signed in and no ID is provided
@@ -72,11 +83,11 @@ public class ViewProfileFragment extends Fragment implements ViewProfileUI, User
             }
         }
 
-        // Initialize adapter BEFORE fetching data
-        reviewsAdapter = new UserReviewsAdapter(userReviews, this);
+        // Initialize adapter BEFORE fetching data, passing the current user's UID
+        reviewsAdapter = new UserReviewsAdapter(userReviews, this, currentUserId); // Pass currentUserId
         binding.Reviews.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.Reviews.setAdapter(reviewsAdapter); // Set the initialized adapter
-        Log.d(TAG, "Reviews adapter initialized and set.");
+        Log.d(TAG, "Reviews adapter initialized and set with current user ID.");
 
         // Fetch the user's profile details (including username) using the UID
         Log.d(TAG, "Attempting to fetch user profile for ID: " + profileUserId);
