@@ -48,5 +48,7 @@
     <string name="book_cover_for_profile_review">Book cover for profile review</string>
     <string name="save">Save</string>
     <string name="saved">Saved</string>
+    <string name="search_users_button">search_users_button</string>
+    <string name="search_user_hint">Search by username</string>
 
 </resources>

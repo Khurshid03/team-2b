@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.example.astudio.R;
+import com.example.astudio.SearchUsersFragment;
 import com.example.astudio.model.UserManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -67,6 +68,12 @@ public class MainUI {
                 // For saved books, create a new instance of ViewSavedBooksFragment.
                 selectedFragment = new ViewSavedBooksFragment();
             }
+            else if (id == R.id.search_users) {
+                // For search users, create a new instance of SearchUsersFragment.
+                selectedFragment = new SearchUsersFragment();
+            }
+
+
 
             if (selectedFragment != null) {
                 // Replace the current fragment in the container.
