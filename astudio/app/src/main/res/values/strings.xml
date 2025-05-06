@@ -39,7 +39,7 @@
     <string name="profile_pic_desc">profile Pic</string>
     <string name="Followers">Followers: </string>
     <string name="following">Following: </string>
-    <string name="your_reviews">Your reviews</string>
+    <string name="your_reviews">Reviews</string>
     <string name="Hello">Hello, %1$s!</string>
     <string name="saved_books_button">Saved Books</string>
     <string name="your_saved_books">Your Saved Books</string>
@@ -54,5 +54,6 @@
     <string name="username_item">Username</string>
     <string name="followed_user">Followed %1$s</string>
     <string name="unfollowed_user">Unfollowed %1$s</string>
+    <string name="Follow">Follow</string>
 
 </resources>
