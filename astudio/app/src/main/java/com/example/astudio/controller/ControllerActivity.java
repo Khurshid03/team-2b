@@ -1,5 +1,4 @@
 package com.example.astudio.controller;
-
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -9,7 +8,7 @@ import com.example.astudio.databinding.FragmentBrowseBooksBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
 import com.example.astudio.model.Review;
-import com.example.astudio.model.ReviewManager;
+import com.example.astudio.model.ReviewManager; // Assuming ReviewManager exists and handles Firestore interaction
 import com.example.astudio.model.User;
 import com.example.astudio.network.GoogleBooksApi;
 import com.example.astudio.network.RetrofitClient;
@@ -40,6 +39,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot; // Import QueryDocumentSnapshot
 
 import android.util.Log;
 import android.view.View;
@@ -58,7 +58,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         CreateAccountUI.CreateAccountListener, LoginUI.LoginListener, ViewBookUI.ViewBookListener{
 
     public MainUI mainUI;
-    private final ReviewManager reviewManager = new ReviewManager();
+    private final ReviewManager reviewManager = new ReviewManager(); // Assuming ReviewManager handles the actual Firestore review operations
     /**
      * This method is called when the activity is created. It initializes the UI and sets up the
      * default fragment (LoginFragment).
@@ -278,6 +278,9 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     @Override
     public void onReviewSubmitted(Book book, Review review, ViewBookUI viewBookUI) {
+        // This method seems to be an older version of review submission.
+        // The onSubmitReview method below is likely the one being used.
+        // Keeping for now, but consider consolidating review submission logic.
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> reviewData = new HashMap<>();
@@ -286,6 +289,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         reviewData.put("comment", review.getComment());
         reviewData.put("timestamp", System.currentTimeMillis());
         reviewData.put("thumbnailUrl", book.getThumbnailUrl());
+        // TODO: Add authorUid here when saving reviews in this method if it's still used.
 
         db.collection("Reviews")
                 .document(book.getTitle()) // Use book title as document ID for now (better would be a real ID)
@@ -321,20 +325,24 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 .addOnSuccessListener(documentSnapshot -> {
                     String username = documentSnapshot.getString("username");
 
-                    // Correct the username before posting
-                    Review correctedReview = new Review(
+                    // Create the Review object with the authorUid
+                    Review reviewToSave = new Review(
                             username,
                             newReview.getRating(),
                             newReview.getComment(),
                             "",  // placeholder for reviewId, will be set by Firestore
                             selectedBook.getTitle(), // or selectedBook.getId() if using a unique ID field
-                            selectedBook.getThumbnailUrl() // Assuming thumbnail URL is part of the book object
+                            selectedBook.getThumbnailUrl(), // Assuming thumbnail URL is part of the book object
+                            uid // <--- Pass the current user's UID as authorUid
                     );
 
-                    reviewManager.postReview(selectedBook, correctedReview, new ReviewManager.OnReviewSavedListener() {
+                    // Pass the Review object with authorUid to the ReviewManager
+                    // Assuming ReviewManager.postReview saves the authorUid field to Firestore
+                    reviewManager.postReview(selectedBook, reviewToSave, new ReviewManager.OnReviewSavedListener() {
                         @Override
                         public void onReviewSaved() {
-                            viewBookFragment.postReview(correctedReview);
+                            // Update the UI with the review that includes the authorUid
+                            viewBookFragment.postReview(reviewToSave);
                         }
 
                         @Override
@@ -358,18 +366,28 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Review> reviews = new ArrayList<>();
                     for (DocumentSnapshot document : queryDocumentSnapshots) {
-                        String username = document.getString("username");
-                        float rating = document.getDouble("rating").floatValue();
-                        String comment = document.getString("comment");
-                        Review review = new Review(
-                                username,
+                        // Use QueryDocumentSnapshot for easier access to data
+                        QueryDocumentSnapshot doc = (QueryDocumentSnapshot) document;
+                        String username = doc.getString("username");
+                        // Handle potential null for rating (Firestore might store as Long or Double)
+                        Number ratingNumber = doc.getDouble("rating");
+                        float rating = ratingNumber != null ? ratingNumber.floatValue() : 0f;
+                        String comment  = doc.getString("comment");
+                        String reviewId = doc.getId();
+                        String bookId   = doc.getReference()
+                                .getParent()
+                                .getParent()
+                                .getId();
+                        String authorUid = doc.getString("authorUid"); // <--- Fetch authorUid
+
+                        // Use the new constructor that includes authorUid
+                        reviews.add(new Review(username,
                                 rating,
                                 comment,
-                                document.getId(),
-                                book.getTitle(),
-                                document.getString("thumbnailUrl") // Assuming thumbnail URL is stored in the review
-                        );
-                        reviews.add(review);
+                                reviewId,
+                                bookId,
+                                doc.getString("thumbnailUrl"), // Assuming thumbnail URL is stored in the review document
+                                authorUid)); // <--- Pass authorUid
                     }
                     viewBookUI.displayReviews(reviews); // New method in ViewBookUI to show reviews
                 })
@@ -384,7 +402,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
             @Override
             public void onReviewUpdated() {
-                viewUI.displayReviews(Collections.emptyList());
+                // After update, re-fetch reviews to refresh the list
                 fetchReviewsForBook(book, viewUI);
             }
             @Override
@@ -400,7 +418,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
             @Override
             public void onReviewDeleted() {
-                viewUI.displayReviews(Collections.emptyList());
+                // After deletion, re-fetch reviews to refresh the list
                 fetchReviewsForBook(book, viewUI);
             }
             @Override
@@ -414,25 +432,35 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     public void fetchUserReviews(String username, ViewProfileUI ui) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collectionGroup("UserReviews")                  // ← CORRECT sub-collection name
-                .whereEqualTo("username", username)              // ← server-side filter
+        db.collectionGroup("UserReviews")
+                .whereEqualTo("username", username)
                 .get()
                 .addOnSuccessListener(snapshots -> {
                     List<Review> userReviews = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots) {
-                        String thumb = doc.getString("thumbnailUrl");
-                        float rating  = doc.getDouble("rating").floatValue();
+                    for (DocumentSnapshot document : snapshots) {
+                        // Use QueryDocumentSnapshot for easier access to data
+                        QueryDocumentSnapshot doc = (QueryDocumentSnapshot) document;
+                        String reviewUsername = doc.getString("username"); // Get username from doc
+                        // Handle potential null for rating
+                        Number ratingNumber = doc.getDouble("rating");
+                        float rating  = ratingNumber != null ? ratingNumber.floatValue() : 0f;
                         String comment  = doc.getString("comment");
                         String reviewId = doc.getId();
                         String bookId   = doc.getReference()
-                                .getParent()            // UserReviews
-                                .getParent()            // Reviews/{bookId}
+                                .getParent()
+                                .getParent()
                                 .getId();
-                        userReviews.add(new Review(username,
+                        String thumb = doc.getString("thumbnailUrl");
+                        String authorUid = doc.getString("authorUid"); // <--- Fetch authorUid from the document
+
+                        // Use the new constructor that includes authorUid
+                        userReviews.add(new Review(reviewUsername, // Use username from doc
                                 rating,
                                 comment,
                                 reviewId,
-                                bookId,thumb));
+                                bookId,
+                                thumb,
+                                authorUid)); // <--- Pass authorUid
                     }
                     ui.displayUserReviews(userReviews);
                 })
@@ -446,9 +474,16 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
 
     public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        // Assuming review object already has the updated rating/comment
+        // Assuming ReviewManager.updateReview updates the correct review in Firestore
         reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
             @Override
             public void onReviewUpdated() {
+                // After update, re-fetch user reviews to refresh the list on the profile page
+                // Need to get the username from the review object or the UI to refetch
+                // Since we are now using UID for profile fetching, we should ideally refetch by UID.
+                // For now, keeping username based refetch as per existing structure.
+                fetchUserReviews(review.getUsername(), ui);
             }
             @Override
             public void onReviewUpdateFailed(Exception e) {
@@ -460,9 +495,16 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
 
     public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
+        // Assuming review object has the reviewId needed for deletion
+        // Assuming ReviewManager.deleteReview deletes the correct review from Firestore
         reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
             @Override
             public void onReviewDeleted() {
+                // After deletion, re-fetch user reviews to refresh the list on the profile page
+                // Need to get the username from the review object or the UI to refetch
+                // Since we are now using UID for profile fetching, we should ideally refetch by UID.
+                // For now, keeping username based refetch as per existing structure.
+                fetchUserReviews(review.getUsername(), ui);
             }
             @Override
             public void onReviewDeleteFailed(Exception e) {
@@ -549,8 +591,10 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                     List<User> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshots) {
                         User u = doc.toObject(User.class);
-                        u.setId(doc.getId()); // Make sure User model has setId
-                        list.add(u);
+                        if (u != null) { // Add null check
+                            u.setId(doc.getId()); // Make sure User model has setId
+                            list.add(u);
+                        }
                     }
                     ui.displaySearchResults(list);
                 })
