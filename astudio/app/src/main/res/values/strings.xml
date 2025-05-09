@@ -54,5 +54,7 @@
     <string name="username_item">Username</string>
     <string name="followed_user">Followed %1$s</string>
     <string name="unfollowed_user">Unfollowed %1$s</string>
+    <string name="followers_count">Followers: %1$d</string>
+    <string name="following_count">Following: %1$d</string>
 
 </resources>

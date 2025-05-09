@@ -13,6 +13,7 @@ import com.example.astudio.R;
 import com.example.astudio.databinding.MainBinding;
 import com.example.astudio.model.UserManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
 
 /**
  * MainUI handles the shared layout with a fragment container and bottom navigation.
@@ -101,6 +102,10 @@ public class MainUI {
 
     private void navigateToSearchUsers(boolean addToBackStack) {
         SearchUsersFragment search = new SearchUsersFragment();
+        Bundle args = new Bundle();
+        args.putString("userId",
+                FirebaseAuth.getInstance().getCurrentUser().getUid());
+        search.setArguments(args);
         showFragment(search, addToBackStack);
     }
 

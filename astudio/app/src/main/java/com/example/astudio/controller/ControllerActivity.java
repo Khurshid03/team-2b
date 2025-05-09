@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import com.example.astudio.view.ViewBookUI;
 import com.example.astudio.view.ViewProfileUI;
@@ -142,7 +143,8 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                                     // Successfully saved user data
                                     BrowseBooksFragment fragment = new BrowseBooksFragment();
                                     fragment.setListener(this);
-                                    mainUI.displayFragment(fragment);
+                                    if (username != null){
+                                    mainUI.displayFragment(fragment);}
                                 })
                                 .addOnFailureListener(e -> {
                                     Toast.makeText(this, "Failed to save user data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -183,7 +185,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
 
 
-    private static final String API_KEY = "PUT_KEY_HERE";
+    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
 
     /**
      * Fetches the top-rated books from the Google Books API and updates the hot books RecyclerView.
@@ -601,43 +603,6 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 .addOnFailureListener(e -> ui.showSearchError(e.getMessage()));
     }
 
-    // B) Follow / unfollow a user
-    public void followUser(String targetUserId, boolean follow, ViewSearchUsersUI ui) {
-        String me = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        CollectionReference followCol = FirebaseFirestore.getInstance()
-                .collection("Users").document(me)
-                .collection("Following");
-
-        Task<Void> task = follow
-                ? followCol.document(targetUserId).set(Collections.singletonMap("since", System.currentTimeMillis()))
-                : followCol.document(targetUserId).delete();
-
-        task.addOnSuccessListener(a -> {/* no UI callback needed here; adapter will update */}
-                )
-                .addOnFailureListener(e -> ui.showSearchError("Follow error: " + e.getMessage()));
-    }
-
-
-    public interface OnFollowingFetchedListener {
-        void onFetched(List<String> followingUids);
-        void onError(String error);
-    }
-
-    public void fetchFollowingUids(String myUid, OnFollowingFetchedListener l) {
-        FirebaseFirestore.getInstance()
-                .collection("Users").document(myUid)
-                .collection("Following")       // or whatever you called it
-                .get()
-                .addOnSuccessListener(snapshots -> {
-                    List<String> uids = new ArrayList<>();
-                    for (DocumentSnapshot d: snapshots) {
-                        uids.add(d.getId());
-                    }
-                    l.onFetched(uids);
-                })
-                .addOnFailureListener(e -> l.onError(e.getMessage()));
-    }
-
     // Interface for fetching user profile
     public interface OnUserProfileFetchedListener {
         void onFetched(User user);
@@ -673,4 +638,110 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                 });
     }
 
+
+    // Interface for callbacks
+    public interface OnCountFetchedListener {
+        void onCount(int count);
+        void onError(String err);
+    }
+
+    /**
+     * How many users this person is following?
+     */
+    public void fetchFollowingCount(String userId, OnCountFetchedListener listener) {
+        FirebaseFirestore.getInstance()
+                .collection("Users")
+                .document(userId)
+                .collection("Follow")
+                .get()
+                .addOnSuccessListener(qs -> listener.onCount(qs.size()))
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    /**
+     * How many followers does this username have?
+     */
+    public void fetchFollowersCount(String username, OnCountFetchedListener listener) {
+        FirebaseFirestore.getInstance()
+                .collectionGroup("Follow")
+                .whereEqualTo("followed", username)
+                .get()
+                .addOnSuccessListener(qs -> listener.onCount(qs.size()))
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    /**
+     * Follow a user by writing under Users/{myId}/Follow/{followedUsername}
+     */
+    public void follow(String myId,
+                       String followedUsername,
+                       Runnable onSuccess,
+                       Consumer<String> onError) {
+        Map<String,Object> data = new HashMap<>();
+        data.put("followed", followedUsername);
+        data.put("timestamp", System.currentTimeMillis());
+
+        FirebaseFirestore.getInstance()
+                .collection("Users")
+                .document(myId)
+                .collection("Follow")
+                .document(followedUsername)
+                .set(data)
+                .addOnSuccessListener(a -> onSuccess.run())
+                .addOnFailureListener(e -> onError.accept(e.getMessage()));
+    }
+
+    /**
+     * Unfollow by deleting that same doc
+     */
+    public void unfollow(String myId,
+                         String followedUsername,
+                         Runnable onSuccess,
+                         Consumer<String> onError) {
+        FirebaseFirestore.getInstance()
+                .collection("Users")
+                .document(myId)
+                .collection("Follow")
+                .document(followedUsername)
+                .delete()
+                .addOnSuccessListener(a -> onSuccess.run())
+                .addOnFailureListener(e -> onError.accept(e.getMessage()));
+    }
+
+    /** Callback for fetching entire “following” list */
+    public interface OnFollowedListFetchedListener {
+        void onFetched(List<String> usernames);
+        void onError(String err);
+    }
+
+    /**
+     * Fetches the usernames of users that the current user is following.
+     * @param userId The UID of the current user.
+     * @param listener The listener to handle the fetch result.
+     */
+    public void fetchFollowingUsernames(String userId, OnFollowedListFetchedListener listener) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Correctly access the 'Follow' subcollection under the user's document
+        db.collection("Users")           // Collection
+                .document(userId)          // Document (User's UID)
+                .collection("Follow")          // Subcollection
+                .get() // Get all documents in the 'Follow' subcollection
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<String> followingUsernames = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        // Each document in the 'Follow' subcollection represents a followed user.
+                        // We store the followed username in a field (assuming named "followed").
+                        String followedUsername = document.getString("followed");
+                        if (followedUsername != null) {
+                            followingUsernames.add(followedUsername);
+                        }
+                    }
+                    listener.onFetched(followingUsernames);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ControllerActivity", "Error fetching following list", e);
+                    listener.onError(e.getMessage());
+                });
+    }
 }

@@ -14,11 +14,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentSearchUsersBinding;
-import com.example.astudio.model.User; // Assuming User model exists
+import com.example.astudio.model.User;
+import com.example.astudio.model.UserManager;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Fragment that allows searching for users and following/unfollowing them.
@@ -29,7 +34,7 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
     private SearchUsersAdapter adapter;
     private final List<User> results = new ArrayList<>();
     private ControllerActivity controller;
-    private String myUid; // Store current user's UID
+    private String myUid;
 
     @Nullable
     @Override
@@ -45,37 +50,68 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         super.onViewCreated(view, savedInstanceState);
         controller = (ControllerActivity) requireActivity();
 
-        // Get current user's UID
-        myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        // Get current user's username
+// new—check for null first
+        FirebaseUser me = FirebaseAuth.getInstance().getCurrentUser();
+        myUid = (me != null ? me.getUid() : "");
 
         // Initialize adapter BEFORE setting it to the RecyclerView
         adapter = new SearchUsersAdapter(results, myUid, new SearchUsersAdapter.ActionListener() {
             @Override
             public void onFollowToggled(User user, boolean shouldFollow) {
-                controller.followUser(user.getId(), shouldFollow, SearchUsersFragment.this);
-                // Optimistically update adapter state...
-                if (shouldFollow) adapter.getFollowingUids().add(user.getId());
-                else             adapter.getFollowingUids().remove(user.getId());
-                adapter.notifyItemChanged(results.indexOf(user));
+                if (shouldFollow) {
+                    controller.follow(
+                            myUid,
+                            user.getUsername(),
+                            () -> {
+                                // 1) update your Search list button
+                                adapter.getFollowingUsernames().add(user.getUsername());
+                                adapter.notifyItemChanged(results.indexOf(user));
 
-                // Show a proper Toast
-                String msg = shouldFollow
-                        ? "Following " + user.getUsername()
-                        : "Unfollowed " + user.getUsername();
-                Toast.makeText(
-                        getContext(),         // or `requireContext()`
-                        msg,
-                        Toast.LENGTH_SHORT
-                ).show();
+                                // 2) refresh the other user's profile badge if it's currently visible
+                                Fragment top = requireActivity()
+                                        .getSupportFragmentManager()
+                                        .findFragmentById(R.id.fragmentContainerView);
+                                if (top instanceof ViewProfileFragment) {
+                                    String displayed = ((ViewProfileFragment)top)
+                                            .binding.tvUsername.getText().toString();
+                                    if (displayed.equals(user.getUsername())) {
+                                        controller.fetchFollowersCount(
+                                                user.getUsername(),
+                                                new ControllerActivity.OnCountFetchedListener() {
+                                                    @Override public void onCount(int c) {
+                                                        ((ViewProfileFragment)top)
+                                                                .binding.followersButton
+                                                                .setText(getString(R.string.followers_count, c));
+                                                    }
+                                                    @Override public void onError(String e) { /*…*/ }
+                                                }
+                                        );
+                                    }
+                                }
+                            },
+                            err -> Toast.makeText(getContext(), "Follow failed: "+err, Toast.LENGTH_SHORT).show()
+                    );
+                } else {
+                    controller.unfollow(
+                            myUid,
+                            user.getUsername(),
+                            () -> {
+                                adapter.getFollowingUsernames().remove(user.getUsername());
+                                adapter.notifyItemChanged(results.indexOf(user));
+                            },
+                            err -> Toast.makeText(getContext(), "Unfollow failed: " + err, Toast.LENGTH_SHORT).show()
+                    );
+                }
             }
+
+
 
             @Override
             public void onUserClicked(User user) {
-                // Navigate to user's profile page or details
-                // Pass the user's UID instead of username
                 ViewProfileFragment fragment = new ViewProfileFragment();
                 Bundle args = new Bundle();
-                args.putString("userId", user.getId()); // Pass user ID
+                args.putString("userId", user.getId());
                 fragment.setArguments(args);
                 requireActivity().getSupportFragmentManager()
                         .beginTransaction()
@@ -85,15 +121,17 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
             }
         });
 
-        // Set up RecyclerView and adapter
         binding.searchUsersRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.searchUsersRecycler.setAdapter(adapter); // Set the initialized adapter
+        binding.searchUsersRecycler.setAdapter(adapter);
 
-        // 1) First load “who I follow” AFTER adapter is set:
-        controller.fetchFollowingUids(myUid, new ControllerActivity.OnFollowingFetchedListener() {
+        String myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        // Load who I currently follow
+        controller.fetchFollowingUsernames(myUid, new ControllerActivity.OnFollowedListFetchedListener() {
             @Override
-            public void onFetched(List<String> uids) {
-                adapter.setFollowingUids(uids);
+            public void onFetched(List<String> usernames) {
+                adapter.setFollowingUsernames(usernames);
+
                 adapter.notifyDataSetChanged();
             }
             @Override
@@ -101,7 +139,6 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
                 Toast.makeText(getContext(), "Error loading follow list: " + err, Toast.LENGTH_SHORT).show();
             }
         });
-
 
         // Handle search button click
         binding.goButton.setOnClickListener(v -> {
@@ -118,10 +155,7 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         if (users != null) {
             results.addAll(users);
         }
-        // Check if adapter is initialized before notifying
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        }
+        if (adapter != null) adapter.notifyDataSetChanged();
     }
 
     @Override
