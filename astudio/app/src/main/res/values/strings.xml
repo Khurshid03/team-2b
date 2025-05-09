@@ -56,5 +56,8 @@
     <string name="unfollowed_user">Unfollowed %1$s</string>
     <string name="followers_count">Followers: %1$d</string>
     <string name="following_count">Following: %1$d</string>
+    <string name="Follow">Follow</string>
+    <string name="comment_required">Require Comment message</string>
+    <string name="rating_required">Rating Required</string>
 
 </resources>

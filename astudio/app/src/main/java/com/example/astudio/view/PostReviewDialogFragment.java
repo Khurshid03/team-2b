@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RatingBar;
+import android.widget.Toast;
+
 import com.example.astudio.R;
 
 
@@ -66,12 +68,28 @@ public class PostReviewDialogFragment extends DialogFragment {
             submitButton.setOnClickListener(v -> {
                 float rating = ratingBar.getRating();
                 String comment = commentEditText.getText().toString().trim();
+                // 1) Require at least 1 star
+                if (rating == 0f) {
+                    Toast.makeText(getContext(),
+                            "Please give at least one star", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // 2) Require non-empty comment
+                if (comment.isEmpty()) {
+                    commentEditText.setError("Comment cannot be empty");
+                    commentEditText.requestFocus();
+                    return;
+                }
+
+                // All good, pass back to listener
                 if (listener != null) {
                     listener.onReviewSubmitted(rating, comment);
                 }
                 dialog.dismiss();
             });
         });
+
         return dialog;
     }
 }
