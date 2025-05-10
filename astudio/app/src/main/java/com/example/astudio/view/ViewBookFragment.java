@@ -2,8 +2,8 @@ package com.example.astudio.view;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,16 +11,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.bumptech.glide.Glide;
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentViewBookBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.Review;
-import com.example.astudio.model.UserManager;
-import androidx.appcompat.app.AlertDialog;
+import com.example.astudio.view.ViewBookUI.ViewBookListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,17 +32,16 @@ import java.util.List;
  */
 public class ViewBookFragment extends Fragment implements ViewBookUI {
 
+    private static final String FRAGMENT_TAG = "ViewBookFragment";
     private FragmentViewBookBinding binding;
     private Book selectedBook;
     private ViewBookListener listener;
     private boolean isDescriptionExpanded = false;
 
     // Reviews list and adapter.
-    private final List<Review> reviews = new ArrayList<>();
+    private final List<Review> reviewsList = new ArrayList<>();
     private ReviewsAdapter reviewsAdapter;
     private String currentUsername;
-
-
     private boolean isSaved = false;
 
     public ViewBookFragment() {
@@ -53,87 +53,98 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         super.onAttach(context);
         if (context instanceof ViewBookListener) {
             listener = (ViewBookListener) context;
+            Log.d(FRAGMENT_TAG, "Listener (ControllerActivity) attached.");
         } else {
+            Log.e(FRAGMENT_TAG, "Host activity must implement ViewBookListener.");
             throw new IllegalStateException("Host must implement ViewBookListener");
         }
     }
 
-
-
-    /**
-     * Called to create and inflate the view for this fragment.
-     * Retrieves the selected book from the arguments and optionally the current username.
-     *
-     * @param inflater The LayoutInflater object to inflate the view.
-     * @param container The container that the view will be attached to.
-     * @param savedInstanceState A bundle containing saved instance state, if any.
-     * @return The root view of the fragment.
-     */
     @NonNull
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentViewBookBinding.inflate(inflater, container, false);
-        // Retrieve the book from the fragment arguments (if available)
+        Log.d(FRAGMENT_TAG, "onCreateView called.");
+
         if (getArguments() != null) {
             selectedBook = (Book) getArguments().getSerializable("book");
-            if(getArguments().containsKey("username")) {
-                currentUsername = getArguments().getString("username");
+            if (selectedBook != null) {
+                Log.d(FRAGMENT_TAG, "Selected book retrieved: " + selectedBook.getTitle());
+            } else {
+                Log.e(FRAGMENT_TAG, "Selected book is NULL.");
             }
+            if (getArguments().containsKey("username")) {
+                currentUsername = getArguments().getString("username");
+                Log.d(FRAGMENT_TAG, "Current username from args: " + currentUsername);
+            }
+        } else {
+            Log.e(FRAGMENT_TAG, "getArguments() is null.");
         }
         return binding.getRoot();
     }
 
-    /**
-     * Called after the fragment's view has been created. This method sets up the book details,
-     * initializes the reviews RecyclerView, and configures the Post Review button.
-     *
-     * @param view The root view of the fragment.
-     * @param savedInstanceState A bundle containing saved instance state, if any.
-     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        Log.d(FRAGMENT_TAG, "onViewCreated called.");
+
         if (selectedBook != null) {
             updateBookDetails(selectedBook);
-            if (listener != null) {
-                listener.fetchReviews(selectedBook, this);
-            }
+        } else {
+            Log.e(FRAGMENT_TAG, "selectedBook is null.");
+            Toast.makeText(getContext(), "Error: Book data not found.", Toast.LENGTH_LONG).show();
         }
 
-        //reviewsAdapter = new ReviewsAdapter(reviews);
-        reviewsAdapter = new ReviewsAdapter(reviews, new ReviewActionListener() {
+        // Initialize adapter and RecyclerView
+        reviewsAdapter = new ReviewsAdapter(reviewsList, new ReviewActionListener() {
             @Override
             public void onEditReview(Review review, int pos) {
                 EditReviewDialogFragment dlg = EditReviewDialogFragment.newInstance(review);
                 dlg.setOnReviewEditedListener((newRating, newComment) -> {
                     review.setRating(newRating);
                     review.setComment(newComment);
-                    listener.onEditReviewRequested(selectedBook, review, ViewBookFragment.this);
+                    if (listener != null) {
+                        listener.onEditReviewRequested(selectedBook, review, ViewBookFragment.this);
+                    }
                 });
                 dlg.show(getChildFragmentManager(), "EditReviewDialog");
             }
+
             @Override
             public void onDeleteReview(Review review, int pos) {
                 new AlertDialog.Builder(requireContext())
                         .setMessage(R.string.confirm_delete_review)
-                        .setPositiveButton(android.R.string.yes, (d,w) ->
-                                listener.onDeleteReviewRequested(selectedBook, review, ViewBookFragment.this))
+                        .setPositiveButton(android.R.string.yes, (d, w) -> {
+                            if (listener != null) {
+                                listener.onDeleteReviewRequested(selectedBook, review, ViewBookFragment.this);
+                            }
+                        })
                         .setNegativeButton(android.R.string.no, null)
                         .show();
             }
         });
         binding.reviewsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.reviewsRecycler.setAdapter(reviewsAdapter);
+        Log.d(FRAGMENT_TAG, "RecyclerView and Adapter initialized.");
+
+        // Now request reviews
+        if (listener != null && selectedBook != null) {
+            Log.i(FRAGMENT_TAG, "Requesting reviews for: " + selectedBook.getTitle());
+            listener.fetchReviews(selectedBook, this);
+        }
 
         binding.postReviewButton.setOnClickListener(v -> openPostReviewDialog());
 
+        if (listener != null && selectedBook != null) {
+            listener.isBookSaved(selectedBook, this);
+        }
 
-// Ask controller “is it saved?” so onBookSaveState(...) will run
-        listener.isBookSaved(selectedBook, this);
-
-// Now handle taps
         binding.savedBooksButton.setOnClickListener(v -> {
+            if (selectedBook == null || listener == null) {
+                Toast.makeText(getContext(), "Error performing action.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (isSaved) {
                 listener.removeSavedBook(selectedBook, this);
             } else {
@@ -142,109 +153,109 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         });
     }
 
-    /**
-     * Opens the PostReviewDialogFragment to collect a review from the user.
-     * Once submitted, the review is added to the list of reviews, and the RecyclerView is updated.
-     */
     private void openPostReviewDialog() {
+        if (selectedBook == null) {
+            Toast.makeText(getContext(), "Cannot post review: Book data missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         PostReviewDialogFragment dialog = new PostReviewDialogFragment();
         dialog.setOnReviewSubmittedListener((rating, comment) -> {
+            String author = currentUsername != null ? currentUsername : "Anonymous";
             Review newReview = new Review(
-                currentUsername,
-                rating,
-                comment,
+                    author,
+                    rating,
+                    comment,
                     "",
                     selectedBook.getTitle(),
                     selectedBook.getThumbnailUrl()
             );
-            if (listener != null && selectedBook != null) {
-                listener.onSubmitReview(selectedBook, newReview, this);
-            }
+            if (listener != null) listener.onReviewSubmitted(selectedBook, newReview, this);
         });
         dialog.show(getChildFragmentManager(), "PostReviewDialog");
     }
 
     @Override
     public void postReview(Review review) {
-        reviews.add(review);
-        reviewsAdapter.notifyItemInserted(reviews.size() - 1);
+        reviewsList.add(review);
+        reviewsAdapter.notifyItemInserted(reviewsList.size() - 1);
+        binding.reviewsRecycler.scrollToPosition(reviewsList.size() - 1);
     }
 
     @Override
     public void displayReviews(List<Review> fetchedReviews) {
-        reviews.clear();
-        reviews.addAll(fetchedReviews);
+        if (!isAdded() || binding == null) return;
+        reviewsList.clear();
+        if (fetchedReviews != null) reviewsList.addAll(fetchedReviews);
         reviewsAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Updates the book details on the UI, including title, author, description, rating, and cover image.
-     * This method also handles the expanding/collapsing of the book description.
-     *
-     * @param book The book object whose details are to be displayed.
-     */
     @Override
     public void updateBookDetails(Book book) {
         binding.bookTitle.setText(book.getTitle());
         binding.bookAuthor.setText(getString(R.string.book_author, book.getAuthor()));
         binding.bookDescription.setText(book.getDescription());
         binding.bookRating.setRating(book.getRating());
-        Glide.with(requireContext())
-                .load(book.getThumbnailUrl())
-                .placeholder(R.drawable.placeholder_cover)
-                .into(binding.bookCover);
-
-        // Toggle expand/collapse on the description.
+        String thumb = book.getThumbnailUrl();
+        if (thumb != null && !thumb.isEmpty()) {
+            Glide.with(requireContext())
+                    .load(thumb)
+                    .placeholder(R.drawable.placeholder_cover)
+                    .error(R.drawable.placeholder_cover)
+                    .into(binding.bookCover);
+        } else {
+            binding.bookCover.setImageResource(R.drawable.placeholder_cover);
+        }
         binding.showMoreButton.setOnClickListener(v -> {
             isDescriptionExpanded = !isDescriptionExpanded;
-            if (isDescriptionExpanded) {
-                binding.bookDescription.setMaxLines(Integer.MAX_VALUE);
-                binding.showMoreButton.setText(R.string.show_less);
-            } else {
-                binding.bookDescription.setMaxLines(5);
-                binding.showMoreButton.setText(R.string.show_more);
-            }
+            binding.bookDescription.setMaxLines(isDescriptionExpanded ? Integer.MAX_VALUE : 5);
+            binding.showMoreButton.setText(
+                    isDescriptionExpanded ? R.string.show_less : R.string.show_more);
         });
     }
 
-    /**
-     * Sets the listener for handling events related to the book view.
-     *
-     * @param listener The listener to be set for the book view events.
-     */
     @Override
     public void setListener(ViewBookListener listener) {
         this.listener = listener;
     }
 
-
-    public interface ReviewActionListener {
-        void onEditReview(Review review, int position);
-        void onDeleteReview(Review review, int position);
+    @Override
+    public void onBookSaveState(boolean saved) {
+        this.isSaved = saved;
+        binding.savedBooksButton.setBackgroundTintList(
+                ColorStateList.valueOf(
+                        getResources().getColor(saved ? R.color.secondary : R.color.white, null)
+                )
+        );
+        binding.savedBooksButton.setStrokeColor(
+                ColorStateList.valueOf(
+                        getResources().getColor(R.color.main, null)
+                )
+        );
+        binding.savedBooksButton.setText(
+                saved ? R.string.saved : R.string.save
+        );
+        binding.savedBooksButton.setIconResource(
+                saved ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark_outline
+        );
     }
 
-    /**
-     * Called when the view is destroyed. This method clears the binding object to prevent memory leaks.
-     */
+    @Override
+    public void onBookSaveError(String message) {
+        Toast.makeText(getContext(), "Save error: " + message, Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
     }
 
-
-
-
-    // Inner adapter for reviews.
-    /**
-     * Adapter class for displaying the list of reviews in a RecyclerView.
-     * Each review contains the username, rating, and comment.
-     */
+    // Inner adapter
     static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
         private final List<Review> reviewList;
-
         private final ReviewActionListener actionListener;
-        public ReviewsAdapter(List<Review> list, ReviewActionListener listener) {
+
+        ReviewsAdapter(List<Review> list, ReviewActionListener listener) {
             this.reviewList = list;
             this.actionListener = listener;
         }
@@ -261,11 +272,13 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
             Review review = reviewList.get(position);
             holder.bind(review);
-
-            holder.editButton.setOnClickListener(v ->
-                    actionListener.onEditReview(review, position));
-            holder.deleteButton.setOnClickListener(v ->
-                    actionListener.onDeleteReview(review, position));
+            if (actionListener != null) {
+                holder.editButton.setOnClickListener(v -> actionListener.onEditReview(review, position));
+                holder.deleteButton.setOnClickListener(v -> actionListener.onDeleteReview(review, position));
+            } else {
+                holder.editButton.setVisibility(View.GONE);
+                holder.deleteButton.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -273,9 +286,6 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             return reviewList.size();
         }
 
-        /**
-         * ViewHolder class for binding the review data (username, rating, comment) to the item view.
-         */
         static class ReviewViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder {
             private final android.widget.TextView usernameText;
             private final android.widget.RatingBar ratingBar;
@@ -283,7 +293,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             final android.widget.ImageButton editButton;
             final android.widget.ImageButton deleteButton;
 
-            public ReviewViewHolder(@NonNull View itemView) {
+            ReviewViewHolder(@NonNull View itemView) {
                 super(itemView);
                 usernameText = itemView.findViewById(R.id.review_username);
                 ratingBar = itemView.findViewById(R.id.review_rating);
@@ -292,12 +302,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
                 deleteButton = itemView.findViewById(R.id.deleteReviewButton);
             }
 
-            /**
-             * Binds the review data (username, rating, comment) to the corresponding UI elements.
-             *
-             * @param review The review object containing the data to be displayed.
-             */
-            public void bind(Review review) {
+            void bind(Review review) {
                 usernameText.setText(review.getUsername());
                 commentText.setText(review.getComment());
                 ratingBar.setRating(review.getRating());
@@ -305,41 +310,8 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         }
     }
 
-    /** Called when ControllerActivity reports the book’s save/unsave result */
-    @Override
-    public void onBookSaveState(boolean saved) {
-        // 1) Update the field
-        this.isSaved = saved;
-
-        // 2) Then drive your UI off that same field
-        binding.savedBooksButton.setBackgroundTintList(
-                ColorStateList.valueOf(
-                        isSaved
-                                ? getResources().getColor(R.color.secondary)
-                                : getResources().getColor(R.color.white)
-                )
-        );
-        binding.savedBooksButton.setStrokeColor(
-                ColorStateList.valueOf(
-                        isSaved
-                                ? getResources().getColor(R.color.main)
-                                : getResources().getColor(R.color.main)
-                )
-        );
-        binding.savedBooksButton.setText(
-                isSaved
-                        ? getString(R.string.saved)
-                        : getString(R.string.save)
-        );
-        binding.savedBooksButton.setIconResource(
-                isSaved
-                        ? R.drawable.ic_bookmark_filled
-                        : R.drawable.ic_bookmark_outline
-        );
-    }
-
-    @Override
-    public void onBookSaveError(String message) {
-        Toast.makeText(getContext(), "Save error: " + message, Toast.LENGTH_SHORT).show();
+    public interface ReviewActionListener {
+        void onEditReview(Review review, int position);
+        void onDeleteReview(Review review, int position);
     }
 }

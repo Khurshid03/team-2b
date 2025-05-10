@@ -31,6 +31,7 @@ import com.example.astudio.view.ViewSavedBooksUI;
 import com.example.astudio.view.ViewSearchUsersUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
     private final ReviewManager reviewManager = new ReviewManager(); // Handles review-specific logic (CRUD via its own Firestore calls)
     private FirestoreFacade firestoreFacade; // Facade for other Firestore operations
     private FirebaseAuth mAuth;
+
 
     // Google Books API Key - consider moving to a secure configuration file
     private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14"; // TODO: Replace with your actual API key
@@ -252,22 +254,22 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             Log.w(TAG, "onReviewSubmitted: User not logged in.");
             return;
         }
-        if (review.getAuthorUid() == null || review.getAuthorUid().isEmpty()) {
-            review.setAuthorUid(currentUser.getUid());
-        }
-        if (review.getUsername() == null || review.getUsername().isEmpty()) {
-            firestoreFacade.fetchUsernameForUid(currentUser.getUid(),
-                    username -> {
-                        review.setUsername(username);
-                        proceedWithReviewSubmission(book, review, viewBookUI);
-                    },
-                    e -> {
-                        Log.e(TAG, "Could not fetch username for review submission", e);
-                        Toast.makeText(this, "Could not fetch username. Review not posted.", Toast.LENGTH_SHORT).show();
-                    });
-        } else {
-            proceedWithReviewSubmission(book, review, viewBookUI);
-        }
+
+        // 1) Always set the authorUid
+        String uid = currentUser.getUid();
+        review.setAuthorUid(uid);
+
+        // 2) Always fetch the real username from Firestore
+        firestoreFacade.fetchUsernameForUid(uid,
+                username -> {
+                    review.setUsername(username);
+                    proceedWithReviewSubmission(book, review, viewBookUI);
+                },
+                e -> {
+                    Log.e(TAG, "Could not fetch username for review submission", e);
+                    Toast.makeText(this, "Could not fetch username. Review not posted.", Toast.LENGTH_SHORT).show();
+                }
+        );
     }
 
     private void proceedWithReviewSubmission(Book book, Review review, ViewBookUI viewBookUI) {
@@ -312,6 +314,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         fetchReviews(book, viewBookUI);
     }
 
+
     @Override
     public void onSubmitReview(Book selectedBook, Review newReview, ViewBookFragment viewBookFragment) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -352,22 +355,21 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     @Override
     public void onEditReviewRequested(Book book, Review review, ViewBookUI viewUI) {
-        Log.d(TAG, "Edit review requested for review ID: " + review.getReviewId());
-        reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
-            @Override
-            public void onReviewUpdated() {
-                Log.d(TAG, "Review updated successfully via ReviewManager.");
-                if (viewUI != null) {
-                    fetchReviews(book, viewUI);
+        firestoreFacade.updateReview(
+                review,
+                () -> {
+                    Log.d(TAG, "Review updated via facade for book: " + book.getTitle());
+                    if (viewUI != null) {
+                        // pull down the very same collection the facade writes to
+                        fetchReviews(book, viewUI);
+                    }
+                    Toast.makeText(ControllerActivity.this, "Review updated!", Toast.LENGTH_SHORT).show();
+                },
+                err -> {
+                    Log.e(TAG, "Failed to update review via facade", new Exception(err));
+                    Toast.makeText(ControllerActivity.this, "Update failed: " + err, Toast.LENGTH_SHORT).show();
                 }
-                Toast.makeText(ControllerActivity.this, "Review updated!", Toast.LENGTH_SHORT).show();
-            }
-            @Override
-            public void onReviewUpdateFailed(Exception e) {
-                Log.e(TAG, "Review update failed via ReviewManager", e);
-                Toast.makeText(ControllerActivity.this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
     @Override
@@ -411,23 +413,28 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         });
     }
 
+
     public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
         Log.d(TAG, "Edit user review requested for review ID: " + review.getReviewId() + " by user " + currentUsername);
-        reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
-            @Override
-            public void onReviewUpdated() {
-                Log.d(TAG, "User review updated successfully by " + currentUsername);
-                if (ui != null) {
-                    fetchUserReviews(review.getUsername(), ui);
+
+        // 1) Update via the same facade that you use for reads:
+        firestoreFacade.updateReview(
+                review,
+                () -> {
+                    Log.d(TAG, "User review updated successfully via facade for " + currentUsername);
+
+                    // 2a) Refresh the profile screen
+                    if (ui != null) {
+                        fetchUserReviews(currentUsername, ui);
+                    }
+
+                    Toast.makeText(ControllerActivity.this, "Your review updated!", Toast.LENGTH_SHORT).show();
+                },
+                err -> {
+                    Log.e(TAG, "User review update failed via facade for " + currentUsername, new Exception(err));
+                    Toast.makeText(ControllerActivity.this, "Update failed: " + err, Toast.LENGTH_SHORT).show();
                 }
-                Toast.makeText(ControllerActivity.this, "Your review updated!", Toast.LENGTH_SHORT).show();
-            }
-            @Override
-            public void onReviewUpdateFailed(Exception e) {
-                Log.e(TAG, "User review update failed for " + currentUsername, e);
-                Toast.makeText(ControllerActivity.this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
     public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
