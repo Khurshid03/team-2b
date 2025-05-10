@@ -45,7 +45,7 @@ public class SearchBooksFragment extends Fragment implements SearchBooksUI {
 
     private FragmentSearchBooksBinding binding;
     private SearchBooksAdapter adapter;
-    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
+    private static final String API_KEY = "API_KEY";
     private MainUI mainUI;
 
     public SearchBooksFragment() {
