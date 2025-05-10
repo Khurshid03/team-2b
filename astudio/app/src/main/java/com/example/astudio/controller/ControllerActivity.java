@@ -8,6 +8,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.astudio.R;
 import com.example.astudio.databinding.FragmentBrowseBooksBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
@@ -31,9 +32,8 @@ import com.example.astudio.view.ViewSavedBooksUI;
 import com.example.astudio.view.ViewSearchUsersUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.ListenerRegistration;
+import com.example.astudio.view.SearchBooksUI;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +42,7 @@ import java.util.function.Consumer; // Import Consumer for isBookSaved
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.example.astudio.persistence.GoogleApiFacade;
 
 /**
  * This class acts as the controller for the entire application. It keeps track of the application
@@ -55,15 +56,20 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
     private final ReviewManager reviewManager = new ReviewManager(); // Handles review-specific logic (CRUD via its own Firestore calls)
     private FirestoreFacade firestoreFacade; // Facade for other Firestore operations
     private FirebaseAuth mAuth;
+    private GoogleApiFacade apiFacade = new GoogleApiFacade();
 
 
     // Google Books API Key - consider moving to a secure configuration file
-    private static final String API_KEY = "API_KEY"; // TODO: Replace with your actual API key
+    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14"; // TODO: Replace with your actual API key
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        this.firestoreFacade = new FirestoreFacade();
+        this.apiFacade = new GoogleApiFacade();
+        this.mAuth = FirebaseAuth.getInstance();
 
         this.mainUI = new MainUI(this);
         setContentView(this.mainUI.getRootView());
@@ -75,6 +81,15 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         CreateAccountFragment createAccountFragment = new CreateAccountFragment();
         createAccountFragment.setListener(this);
         this.mainUI.displayFragment(createAccountFragment);
+    }
+
+    public void fetchSearchBooks(String query, SearchBooksUI ui) {
+        apiFacade.searchBooks(
+                query,
+                21,
+                ui::onSearchBooksSuccess,
+                ui::onSearchBooksFailure
+        );
     }
 
     @Override
@@ -153,6 +168,31 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
                         Toast.makeText(this, "Login failed: " + Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    /** Called by BrowseBooksFragment to get “Welcome, <username>!” */
+    public void fetchWelcomeMessage(BrowseBooksUI ui) {
+        FirebaseUser me = mAuth.getCurrentUser();
+        if (me == null) {
+            ui.displayWelcomeMessage(getString(R.string.welcome_message, "Guest"));
+            return;
+        }
+        String uid = me.getUid();
+        // reuse our facade’s fetchUserProfile:
+        firestoreFacade.fetchUserProfile(uid, new FirestoreFacade.OnUserProfileFetchedListener() {
+            @Override public void onFetched(User user) {
+                String name = (user != null && user.getUsername() != null)
+                        ? user.getUsername()
+                        : "there";
+                String welcome = getString(R.string.welcome_message, name);
+                ui.displayWelcomeMessage(welcome);
+            }
+            @Override public void onError(String err) {
+                // fallback
+                String welcome = getString(R.string.welcome_message, "there");
+                ui.displayWelcomeMessage(welcome);
+            }
+        });
     }
 
     public void fetchTopRatedBooks(BrowseBooksUI ui) {

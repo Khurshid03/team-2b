@@ -45,7 +45,6 @@ public class SearchBooksFragment extends Fragment implements SearchBooksUI {
 
     private FragmentSearchBooksBinding binding;
     private SearchBooksAdapter adapter;
-    private static final String API_KEY = "API_KEY";
     private MainUI mainUI;
 
     public SearchBooksFragment() {
@@ -103,64 +102,20 @@ public class SearchBooksFragment extends Fragment implements SearchBooksUI {
          * validates it, and calls the fetchSearchBooks method to perform the search.
          */
         binding.goButton.setOnClickListener(v -> {
-            String query = binding.searchInput.getText().toString().trim();
-            if (!query.isEmpty()) {
-                fetchSearchBooks(query);
-            } else {
+            String q = binding.searchInput.getText().toString().trim();
+            if (q.isEmpty()) {
                 Toast.makeText(getContext(), "Please enter a search query", Toast.LENGTH_SHORT).show();
+            } else if (getActivity() instanceof ControllerActivity) {
+                ((ControllerActivity) getActivity()).fetchSearchBooks(q, this);
             }
         });
 
-        // If a query was passed via Bundle (from BrowseBooksFragment), auto-search.
-        if (getArguments() != null && getArguments().containsKey("query")) {
-            String query = getArguments().getString("query");
-            binding.searchInput.setText(query);
-            fetchSearchBooks(query);
+// And if you auto‐run the initial “query” argument:
+        if (getArguments()!=null && getArguments().containsKey("query")) {
+            String q = getArguments().getString("query");
+            binding.searchInput.setText(q);
+            ((ControllerActivity)getActivity()).fetchSearchBooks(q, this);
         }
-    }
-
-    /**
-     * Fetches books from the Google Books API based on the search query.
-     * @param query The search query entered by the user.
-     */
-    private void fetchSearchBooks(String query) {
-        GoogleBooksApi api = RetrofitClient.getInstance();
-        // Fetch up to 20 results for the given query.
-        api.searchBooks(query + "+printType:books", API_KEY, 21).enqueue(new Callback<BookResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Book> books = new ArrayList<>();
-                    for (BookResponse.Item item : response.body().items) {
-                        String title = item.volumeInfo.title;
-                        String thumb = (item.volumeInfo.imageLinks != null) ? item.volumeInfo.imageLinks.thumbnail : "";
-                        if (!thumb.isEmpty()) {
-                            thumb = thumb.replace("http://", "https://");
-                        }
-                        float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
-                        String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "";
-                        String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "Unknown author";
-                        books.add(new Book(title, thumb, rating, author, description));
-                    }
-                    adapter.updateData(books); // Updating the adapter with the fetched data
-                } else {
-                    Toast.makeText(getContext(), "No books found", Toast.LENGTH_SHORT).show();
-                }
-
-                Log.d("SearchBooks", "Response code: " + response.code());
-                if (response.body() != null) {
-                    Log.d("SearchBooks", "Items count: " + response.body().items.size());
-                } else {
-                    Log.d("SearchBooks", "Response body is null");
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                Toast.makeText(getContext(), "Search failed: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     @Override

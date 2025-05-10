@@ -90,31 +90,6 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-
-        String userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
-
-        if (userId != null) {
-            db.collection("Users").document(userId).get()
-                    .addOnSuccessListener(doc -> {
-                        // 1) Bail out if fragment is gone or view destroyed
-                        if (!isAdded() || binding == null) return;
-
-                        String username = doc.getString("username");
-                        // 2) Safely format your string with the context you know is still valid
-                        String welcome = requireContext().getString(
-                                R.string.welcome_message, username
-                        );
-                        binding.welcomeMessage.setText(welcome);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (!isAdded()) return;
-                        Toast.makeText(getContext(),
-                                "Failed to load username", Toast.LENGTH_SHORT
-                        ).show();
-                    });
-        }
 
         //for searching books
         binding.goButton.setOnClickListener(v -> {
@@ -157,9 +132,15 @@ public class BrowseBooksFragment extends Fragment implements BrowseBooksUI {
 
         // inside onViewCreated()
         if (getActivity() instanceof ControllerActivity controller) {
+            controller.fetchWelcomeMessage(this);
             controller.fetchTopRatedBooks(this);  // 'this' is BrowseBooksFragment implementing BrowseBooksUI
             controller.fetchBooksByGenre("Fiction", this);
         }
+    }
+
+    @Override
+    public void displayWelcomeMessage(String welcomeText) {
+        binding.welcomeMessage.setText(welcomeText);
     }
 
 

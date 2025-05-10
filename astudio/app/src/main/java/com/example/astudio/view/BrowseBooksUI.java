@@ -21,6 +21,9 @@ public interface BrowseBooksUI {
         void onGenreSelected(String genre);
     }
 
+    void displayWelcomeMessage(String welcomeText);
+
+
     /**
      * Listener interface for handling clicks on hot books.
      */
