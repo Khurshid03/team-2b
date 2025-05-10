@@ -1,25 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- res/layout/fragment_view_profile.xml -->
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
     android:background="@color/secondary"
     tools:context=".view.ViewProfileFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/fixed_top_section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:layout_marginTop="30dp"
         android:padding="16dp">
 
-
-        <!-- Centered profile picture below greeting -->
-
-        <!-- Details: Username and follow buttons -->
         <ImageView
             android:id="@+id/ivProfilePicture"
             android:layout_width="80dp"
@@ -29,27 +24,18 @@
             android:contentDescription="@string/profile_pic_desc"
             android:scaleType="centerCrop"
             android:src="@drawable/profile_picture"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Reviews header -->
-
-        <!-- RecyclerView for reviews -->
-
         <LinearLayout
             android:id="@+id/detailsSection"
-            android:layout_width="277dp"
-            android:layout_height="67dp"
-            android:layout_marginEnd="8dp"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="@+id/ivProfilePicture"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.571"
             app:layout_constraintStart_toEndOf="@+id/ivProfilePicture"
-            app:layout_constraintTop_toTopOf="@+id/ivProfilePicture"
-            app:layout_constraintVertical_bias="1.0">
+            app:layout_constraintTop_toTopOf="@+id/ivProfilePicture">
 
             <TextView
                 android:id="@+id/tvUsername"
@@ -57,21 +43,20 @@
                 android:layout_height="wrap_content"
                 android:text="@string/username"
                 android:textSize="16sp"
-                android:layout_marginStart="30dp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/buttonsSection"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/followersButton"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
                     android:text="@string/Followers"
                     android:textAllCaps="false"
                     app:backgroundTint="@color/white"
@@ -86,7 +71,7 @@
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
+                    android:layout_marginStart="8dp"
                     android:text="@string/following"
                     android:textAllCaps="false"
                     app:backgroundTint="@color/white"
@@ -96,60 +81,59 @@
                     app:strokeColor="@color/main"
                     app:strokeWidth="1dp"
                     app:useMaterialThemeColors="false" />
-
-
             </LinearLayout>
-
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/ReviewsHeader"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="24dp"
-            android:text="@string/your_reviews"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/detailsSection"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btnFollow" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/Reviews"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:nestedScrollingEnabled="false"
-            android:paddingTop="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/ReviewsHeader"
-            app:layout_constraintVertical_bias="0.074"
-            tools:listitem="@layout/item_user_review" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFollow"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="16dp"
             android:text="@string/follow"
             android:textAllCaps="false"
-            app:backgroundTint="@color/white"
+            android:visibility="gone" app:backgroundTint="@color/white"
             app:cornerRadius="8dp"
             app:iconGravity="textStart"
             app:iconPadding="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ivProfilePicture"
             app:strokeColor="@color/main"
             app:strokeWidth="1dp"
-            app:useMaterialThemeColors="false" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            app:useMaterialThemeColors="false"
+            tools:visibility="visible"/> </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.core.widget.NestedScrollView>
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollable_reviews_section"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_below="@id/fixed_top_section"
+        android:layout_alignParentBottom="true"
+        android:fillViewport="true">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:id="@+id/ReviewsHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/past_reviews"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/Reviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:nestedScrollingEnabled="false" android:paddingTop="8dp"
+                tools:listitem="@layout/item_user_review" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</RelativeLayout>

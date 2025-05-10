@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -18,36 +19,38 @@ import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentViewProfileBinding;
 import com.example.astudio.model.Review;
 import com.example.astudio.model.User;
-// Import listener interface from FirestoreFacade
 import com.example.astudio.persistence.FirestoreFacade;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration; // For managing snapshot listeners
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Fragment to display any user's profile: their username, follower/following counts,
- * and their submitted reviews. Supports editing/deleting reviews if viewing own profile.
+ * and their submitted reviews. Supports editing/deleting reviews if viewing own profile,
+ * and following/unfollowing other users.
  */
 public class ViewProfileFragment extends Fragment
         implements ViewProfileUI, UserReviewsAdapter.ReviewActionListener {
 
-    private static final String FRAGMENT_TAG = "ViewProfileFragment"; // For logging
-    // Made binding accessible for SearchUsersFragment to update follower count
-    // Consider a more robust callback mechanism or ViewModel for cross-fragment communication
+    private static final String FRAGMENT_TAG = "ViewProfileFragment";
     protected FragmentViewProfileBinding binding;
     private UserReviewsAdapter reviewsAdapter;
     private final List<Review> userReviews = new ArrayList<>();
     private ControllerActivity controller;
     private String profileUserId; // The ID of the user whose profile is being viewed
     private String currentLoggedInUserId; // The ID of the currently logged-in user
+    private String profileUsername; // The username of the profile being viewed
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private ListenerRegistration followersListenerRegistration; // To remove listener later
-    private ListenerRegistration followingListenerRegistration; // To remove listener later
+    private ListenerRegistration followersListenerRegistration;
+    private ListenerRegistration followingListenerRegistration;
+
+    // To keep track of the current follow state for the displayed profile
+    private boolean isCurrentlyFollowingProfileUser = false;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -73,82 +76,81 @@ public class ViewProfileFragment extends Fragment
             profileUserId = currentLoggedInUserId; // Default to own profile if no userId is passed
         }
 
-        if (profileUserId == null) {
+        if (profileUserId == null && currentLoggedInUserId == null) { // Check if we can't determine any profile
             Toast.makeText(getContext(), "User ID not available. Cannot load profile.", Toast.LENGTH_LONG).show();
-            Log.e(FRAGMENT_TAG, "profileUserId is null. Cannot proceed.");
-            // Optionally, navigate back or show an error state
+            Log.e(FRAGMENT_TAG, "profileUserId and currentLoggedInUserId are null. Cannot proceed.");
             return;
         }
+        if (profileUserId == null) { // If profileUserId was not in args, it defaults to currentLoggedInUserId
+            profileUserId = currentLoggedInUserId;
+        }
+
 
         Log.d(FRAGMENT_TAG, "Viewing profile for userId: " + profileUserId);
         Log.d(FRAGMENT_TAG, "Current logged in userId: " + currentLoggedInUserId);
 
-
-        // Set up reviews RecyclerView
         reviewsAdapter = new UserReviewsAdapter(userReviews, this, currentLoggedInUserId);
         binding.Reviews.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.Reviews.setAdapter(reviewsAdapter);
 
-        // Fetch profile info
-        // Use FirestoreFacade.OnUserProfileFetchedListener
+        fetchProfileAndSetupFollowButton();
+    }
+
+    private void fetchProfileAndSetupFollowButton() {
+        if (profileUserId == null) {
+            Log.e(FRAGMENT_TAG, "fetchProfileAndSetupFollowButton: profileUserId is null.");
+            Toast.makeText(getContext(), "Error: Profile ID missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         controller.fetchUserProfile(profileUserId, new FirestoreFacade.OnUserProfileFetchedListener() {
             @Override
             public void onFetched(User user) {
-                if (!isAdded() || binding == null) return; // Check if fragment is still active
+                if (!isAdded() || binding == null) return;
 
                 if (user == null) {
                     Toast.makeText(getContext(), "User not found", Toast.LENGTH_SHORT).show();
                     Log.w(FRAGMENT_TAG, "User not found for ID: " + profileUserId);
+                    binding.btnFollow.setVisibility(View.GONE); // Hide follow button if user not found
                     return;
                 }
-                String username = user.getUsername();
-                if (username == null) {
+                profileUsername = user.getUsername(); // Store the fetched username
+                if (profileUsername == null) {
                     Log.e(FRAGMENT_TAG, "Username is null for user ID: " + profileUserId);
                     Toast.makeText(getContext(), "Username not available.", Toast.LENGTH_SHORT).show();
                     binding.tvUsername.setText("Error: No Username");
-                    return; // Cannot proceed without username for other queries
+                    binding.btnFollow.setVisibility(View.GONE);
+                    return;
                 }
-                binding.tvUsername.setText(username);
-                Log.d(FRAGMENT_TAG, "Profile loaded for username: " + username);
+                binding.tvUsername.setText(profileUsername);
+                Log.d(FRAGMENT_TAG, "Profile loaded for username: " + profileUsername);
 
-                // Set up real-time follower count
-                // This direct Firestore call is kept for real-time updates.
-                // The controller's fetchFollowersCount is a one-time fetch.
-                if (followersListenerRegistration != null) followersListenerRegistration.remove(); // Remove previous listener
-                followersListenerRegistration = db.collectionGroup("Follow")
-                        .whereEqualTo("followed", username) // Query by username being followed
-                        .addSnapshotListener((snapshots, e) -> {
-                            if (!isAdded() || binding == null) return; // Check fragment state
-                            if (e != null) {
-                                Log.w(FRAGMENT_TAG, "Followers count listen failed for " + username, e);
-                                return;
-                            }
-                            if (snapshots != null) {
-                                Log.d(FRAGMENT_TAG, "Followers count for " + username + ": " + snapshots.size());
-                                binding.followersButton.setText(getString(R.string.followers_count, snapshots.size()));
-                            }
-                        });
+                setupRealtimeCounts(profileUsername);
+                controller.fetchUserReviews(profileUsername, ViewProfileFragment.this);
 
-                // Set up real-time following count
-                // This direct Firestore call is kept for real-time updates.
-                if (followingListenerRegistration != null) followingListenerRegistration.remove(); // Remove previous listener
-                followingListenerRegistration = db.collection("Users")
-                        .document(profileUserId) // The user whose profile we are viewing
-                        .collection("Follow")
-                        .addSnapshotListener((snapshots, e) -> {
-                            if (!isAdded() || binding == null) return; // Check fragment state
-                            if (e != null) {
-                                Log.w(FRAGMENT_TAG, "Following count listen failed for " + profileUserId, e);
-                                return;
-                            }
-                            if (snapshots != null) {
-                                Log.d(FRAGMENT_TAG, "Following count for " + profileUserId + ": " + snapshots.size());
-                                binding.followingButton.setText(getString(R.string.following_count, snapshots.size()));
-                            }
-                        });
+                // Setup Follow Button
+                if (currentLoggedInUserId != null && !profileUserId.equals(currentLoggedInUserId)) {
+                    binding.btnFollow.setVisibility(View.VISIBLE);
+                    // Check initial follow state
+                    controller.fetchFollowingUsernames(currentLoggedInUserId, new FirestoreFacade.OnFollowedListFetchedListener() {
+                        @Override
+                        public void onFetched(List<String> currentlyFollowingUsernames) {
+                            if (!isAdded() || binding == null) return;
+                            isCurrentlyFollowingProfileUser = currentlyFollowingUsernames.contains(profileUsername);
+                            updateFollowButtonUI(isCurrentlyFollowingProfileUser);
+                        }
 
-                // Load this user's reviews using the controller
-                controller.fetchUserReviews(user.getUsername(), ViewProfileFragment.this); // 'this' implements ViewProfileUI
+                        @Override
+                        public void onError(String error) {
+                            if (!isAdded() || binding == null) return;
+                            Log.e(FRAGMENT_TAG, "Error fetching following list: " + error);
+                            Toast.makeText(getContext(), "Could not determine follow status.", Toast.LENGTH_SHORT).show();
+                            updateFollowButtonUI(false); // Default to "Follow" state on error
+                        }
+                    });
+                } else {
+                    binding.btnFollow.setVisibility(View.GONE);
+                    Log.d(FRAGMENT_TAG, "Viewing own profile or not logged in, hiding follow button.");
+                }
             }
 
             @Override
@@ -156,9 +158,109 @@ public class ViewProfileFragment extends Fragment
                 if (!isAdded()) return;
                 Toast.makeText(getContext(), "Error loading profile: " + error, Toast.LENGTH_LONG).show();
                 Log.e(FRAGMENT_TAG, "Error loading profile for ID " + profileUserId + ": " + error);
+                binding.btnFollow.setVisibility(View.GONE);
             }
         });
     }
+    private void setupRealtimeCounts(String usernameToQuery) {
+        // Real-time follower count
+        if (followersListenerRegistration != null) followersListenerRegistration.remove();
+        followersListenerRegistration = db.collectionGroup("Follow")
+                .whereEqualTo("followed", usernameToQuery)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (!isAdded() || binding == null) return;
+                    if (e != null) {
+                        Log.w(FRAGMENT_TAG, "Followers count listen failed for " + usernameToQuery, e);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        binding.followersButton.setText(getString(R.string.followers_count, snapshots.size()));
+                    }
+                });
+
+        // Real-time following count (for the profile being viewed)
+        if (followingListenerRegistration != null) followingListenerRegistration.remove();
+        followingListenerRegistration = db.collection("Users")
+                .document(profileUserId) // ID of the user whose profile is being viewed
+                .collection("Follow")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (!isAdded() || binding == null) return;
+                    if (e != null) {
+                        Log.w(FRAGMENT_TAG, "Following count listen failed for " + profileUserId, e);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        binding.followingButton.setText(getString(R.string.following_count, snapshots.size()));
+                    }
+                });
+    }
+
+
+    private void updateFollowButtonUI(boolean isFollowing) {
+        if (!isAdded() || binding == null || profileUsername == null) {
+            // If profileUsername is null, we can't set up the click listener correctly.
+            if (binding != null) binding.btnFollow.setVisibility(View.GONE); // Hide if essential info missing
+            return;
+        }
+
+        isCurrentlyFollowingProfileUser = isFollowing; // Update the state variable
+
+        if (isFollowing) {
+            binding.btnFollow.setText(getString(R.string.Following));
+            // Optionally change button style for "Following" state
+            // binding.btnFollow.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.grey));
+        } else {
+            binding.btnFollow.setText(getString(R.string.follow));
+            // Optionally reset button style for "Follow" state
+            // binding.btnFollow.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.white)); // Assuming white is default
+        }
+
+        binding.btnFollow.setOnClickListener(v -> {
+            if (currentLoggedInUserId == null) {
+                Toast.makeText(getContext(), "Please log in to follow users.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Disable button temporarily to prevent multiple clicks
+            binding.btnFollow.setEnabled(false);
+
+            if (isCurrentlyFollowingProfileUser) {
+                // Unfollow action
+                controller.unfollow(profileUsername,
+                        () -> { // onSuccess
+                            if (!isAdded()) return;
+                            Log.d(FRAGMENT_TAG, "Successfully unfollowed " + profileUsername);
+                            updateFollowButtonUI(false);
+                            binding.btnFollow.setEnabled(true);
+                            // Follower count for the profile user will update via snapshot listener
+                        },
+                        error -> { // onError
+                            if (!isAdded()) return;
+                            Log.e(FRAGMENT_TAG, "Failed to unfollow " + profileUsername + ": " + error);
+                            Toast.makeText(getContext(), "Unfollow failed: " + error, Toast.LENGTH_SHORT).show();
+                            binding.btnFollow.setEnabled(true);
+                        }
+                );
+            } else {
+                // Follow action
+                controller.follow(profileUsername,
+                        () -> { // onSuccess
+                            if (!isAdded()) return;
+                            Log.d(FRAGMENT_TAG, "Successfully followed " + profileUsername);
+                            updateFollowButtonUI(true);
+                            binding.btnFollow.setEnabled(true);
+                            // Follower count for the profile user will update via snapshot listener
+                        },
+                        error -> { // onError
+                            if (!isAdded()) return;
+                            Log.e(FRAGMENT_TAG, "Failed to follow " + profileUsername + ": " + error);
+                            Toast.makeText(getContext(), "Follow failed: " + error, Toast.LENGTH_SHORT).show();
+                            binding.btnFollow.setEnabled(true);
+                        }
+                );
+            }
+        });
+    }
+
 
     @Override
     public void displayUserReviews(List<Review> reviews) {
@@ -175,11 +277,10 @@ public class ViewProfileFragment extends Fragment
 
     @Override
     public void onEditReview(Review review, int pos) {
-        if (review == null || review.getAuthorUid() == null) {
-            Log.e(FRAGMENT_TAG, "Review or Author UID is null, cannot edit.");
+        if (review == null || review.getAuthorUid() == null || currentLoggedInUserId == null) {
+            Log.e(FRAGMENT_TAG, "Review, Author UID, or currentLoggedInUserId is null, cannot edit.");
             return;
         }
-        // Only allow editing own reviews
         if (!review.getAuthorUid().equals(currentLoggedInUserId)) {
             Toast.makeText(getContext(), "You can only edit your own reviews.", Toast.LENGTH_SHORT).show();
             return;
@@ -189,31 +290,21 @@ public class ViewProfileFragment extends Fragment
         dlg.setOnReviewEditedListener((newRating, newComment) -> {
             review.setRating(newRating);
             review.setComment(newComment);
-            // The adapter might be updated visually, but the actual data update happens via controller
-            // reviewsAdapter.notifyItemChanged(pos); // This will be handled when reviews are re-fetched
-
-            // The username for onEditUserReviewRequested should be the profile user's username
-            String profileUsername = binding.tvUsername.getText().toString();
-            if (profileUsername.isEmpty() || profileUsername.equals("Error: No Username")) {
+            String usernameForController = binding.tvUsername.getText().toString();
+            if (usernameForController.isEmpty() || usernameForController.equals("Error: No Username")) {
                 Log.e(FRAGMENT_TAG, "Cannot edit review, profile username not available.");
                 Toast.makeText(getContext(), "Error: Profile username not available.", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            controller.onEditUserReviewRequested(
-                    profileUsername, // Username of the user whose reviews are being shown
-                    review,
-                    this // ViewProfileFragment itself as ViewProfileUI
-            );
+            controller.onEditUserReviewRequested(usernameForController, review, this);
         });
-        // Use getChildFragmentManager() for dialogs shown from a Fragment
         dlg.show(getChildFragmentManager(), "EditReviewDialog");
     }
 
     @Override
     public void onDeleteReview(Review review, int pos) {
-        if (review == null || review.getAuthorUid() == null) {
-            Log.e(FRAGMENT_TAG, "Review or Author UID is null, cannot delete.");
+        if (review == null || review.getAuthorUid() == null || currentLoggedInUserId == null) {
+            Log.e(FRAGMENT_TAG, "Review, Author UID, or currentLoggedInUserId is null, cannot delete.");
             return;
         }
         if (!review.getAuthorUid().equals(currentLoggedInUserId)) {
@@ -225,44 +316,31 @@ public class ViewProfileFragment extends Fragment
                 .setTitle("Confirm Delete")
                 .setMessage(R.string.confirm_delete_review)
                 .setPositiveButton(android.R.string.yes, (dialog, which) -> {
-                    // The username for onDeleteUserReviewRequested should be the profile user's username
-                    String profileUsername = binding.tvUsername.getText().toString();
-                    if (profileUsername.isEmpty() || profileUsername.equals("Error: No Username")) {
+                    String usernameForController = binding.tvUsername.getText().toString();
+                    if (usernameForController.isEmpty() || usernameForController.equals("Error: No Username")) {
                         Log.e(FRAGMENT_TAG, "Cannot delete review, profile username not available.");
                         Toast.makeText(getContext(), "Error: Profile username not available.", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    // The list update will happen when reviews are re-fetched by the controller
-                    controller.onDeleteUserReviewRequested(
-                            profileUsername, // Username of the user whose reviews are being shown
-                            review,
-                            this // ViewProfileFragment itself as ViewProfileUI
-                    );
+                    controller.onDeleteUserReviewRequested(usernameForController, review, this);
                 })
                 .setNegativeButton(android.R.string.no, null)
                 .show();
     }
 
-    // These methods are part of ViewProfileUI but their primary logic is handled
-    // by onEditReview and onDeleteReview which then call the controller.
-    // The controller calls back to displayUserReviews to refresh.
     @Override
     public void onEditUserReviewRequested(String username, Review review, ViewProfileUI ui) {
-        // This is a callback from controller, but the action originates in this fragment's
-        // onEditReview method. No specific action needed here as controller will call displayUserReviews.
         Log.d(FRAGMENT_TAG, "Controller callback onEditUserReviewRequested for " + username);
     }
 
     @Override
     public void onDeleteUserReviewRequested(String username, Review review, ViewProfileUI ui) {
-        // Similar to onEditUserReviewRequested, primary logic is in onDeleteReview.
         Log.d(FRAGMENT_TAG, "Controller callback onDeleteUserReviewRequested for " + username);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Remove Firestore listeners to prevent memory leaks and unwanted background updates
         if (followersListenerRegistration != null) {
             followersListenerRegistration.remove();
             followersListenerRegistration = null;
@@ -271,7 +349,7 @@ public class ViewProfileFragment extends Fragment
             followingListenerRegistration.remove();
             followingListenerRegistration = null;
         }
-        binding = null; // Important for preventing memory leaks
+        binding = null;
         Log.d(FRAGMENT_TAG, "onDestroyView called, listeners removed.");
     }
 }

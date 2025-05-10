@@ -7,17 +7,15 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import com.example.astudio.R;
 import com.example.astudio.databinding.FragmentBrowseBooksBinding;
 import com.example.astudio.model.Book;
-import com.example.astudio.model.BookResponse;
 import com.example.astudio.model.Review;
 import com.example.astudio.model.ReviewManager;
 import com.example.astudio.model.User;
-import com.example.astudio.network.GoogleBooksApi;
-import com.example.astudio.network.RetrofitClient;
-import com.example.astudio.persistence.FirestoreFacade; // Import the facade
+import com.example.astudio.persistence.FirestoreFacade;
 import com.example.astudio.view.BrowseBooksFragment;
 import com.example.astudio.view.CreateAccountFragment;
 import com.example.astudio.view.CreateAccountUI;
@@ -34,14 +32,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.example.astudio.view.SearchBooksUI;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer; // Import Consumer for isBookSaved
+import java.util.function.Consumer;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import com.example.astudio.persistence.GoogleApiFacade;
 
 /**
@@ -53,29 +47,23 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     private static final String TAG = "ControllerActivity";
     public MainUI mainUI;
-    private final ReviewManager reviewManager = new ReviewManager(); // Handles review-specific logic (CRUD via its own Firestore calls)
-    private FirestoreFacade firestoreFacade; // Facade for other Firestore operations
+    private final ReviewManager reviewManager = new ReviewManager();
+    private FirestoreFacade firestoreFacade;
     private FirebaseAuth mAuth;
-    private GoogleApiFacade apiFacade = new GoogleApiFacade();
-
-
-    // Google Books API Key - consider moving to a secure configuration file
-    private static final String API_KEY = "API_KEY"; // TODO: Replace with your actual API key
+    private GoogleApiFacade googleApiFacade;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Initialize facades and auth
         this.firestoreFacade = new FirestoreFacade();
-        this.apiFacade = new GoogleApiFacade();
+        this.googleApiFacade = new GoogleApiFacade(); // Initialize here
         this.mAuth = FirebaseAuth.getInstance();
 
         this.mainUI = new MainUI(this);
         setContentView(this.mainUI.getRootView());
-
-        this.firestoreFacade = new FirestoreFacade(); // Initialize the facade
-        this.mAuth = FirebaseAuth.getInstance(); // Initialize FirebaseAuth
 
         // Display CreateAccountFragment initially
         CreateAccountFragment createAccountFragment = new CreateAccountFragment();
@@ -83,22 +71,39 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         this.mainUI.displayFragment(createAccountFragment);
     }
 
+    /**
+     * Fetches books based on a search query using the GoogleApiFacade.
+     * This method was already refactored by the user.
+     * @param query The search query.
+     * @param ui The UI to update with search results or errors.
+     */
     public void fetchSearchBooks(String query, SearchBooksUI ui) {
-        apiFacade.searchBooks(
+        Log.d(TAG, "fetchSearchBooks called with query: " + query);
+        // Assuming SearchBooksUI has onSearchBooksSuccess and onSearchBooksFailure
+        googleApiFacade.searchBooks(
                 query,
-                21,
-                ui::onSearchBooksSuccess,
-                ui::onSearchBooksFailure
+                21, // Max results for general search
+                books -> {
+                    if (ui != null) {
+                        Log.d(TAG, "fetchSearchBooks successful, " + books.size() + " books found.");
+                        ui.onSearchBooksSuccess(books);
+                    }
+                },
+                error -> {
+                    if (ui != null) {
+                        Log.e(TAG, "fetchSearchBooks failed: " + error);
+                        ui.onSearchBooksFailure(error);
+                    }
+                }
         );
     }
 
     @Override
     public void onBookSelected(Book book) {
         ViewBookFragment viewBookFragment = new ViewBookFragment();
-        viewBookFragment.setListener(this); // 'this' implements ViewBookUI.ViewBookListener
+        viewBookFragment.setListener(this);
         Bundle args = new Bundle();
-        args.putSerializable("book", book); // Book class must implement Serializable
-        // Pass other necessary details if they are not part of the Book object or for convenience
+        args.putSerializable("book", book);
         args.putString("description", book.getDescription());
         args.putString("author", book.getAuthor());
         viewBookFragment.setArguments(args);
@@ -107,8 +112,16 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     @Override
     public void onGenreSelected(String genre) {
-        // This method is called when a genre is selected in the BrowseBooksFragment.
         Log.d(TAG, "Genre selected: " + genre);
+        // If BrowseBooksFragment is the active UI that should display genre results
+        // and implements BrowseBooksUI
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainerView); // Assuming R.id.fragmentContainerView is your main container
+        if (currentFragment instanceof BrowseBooksUI) {
+            fetchBooksByGenre(genre, (BrowseBooksUI) currentFragment);
+        } else {
+            Log.w(TAG, "onGenreSelected: Current fragment does not implement BrowseBooksUI or is not BrowseBooksFragment.");
+            // Potentially navigate to BrowseBooksFragment first if not already there
+        }
     }
 
     @Override
@@ -178,112 +191,98 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             return;
         }
         String uid = me.getUid();
-        // reuse our facade’s fetchUserProfile:
         firestoreFacade.fetchUserProfile(uid, new FirestoreFacade.OnUserProfileFetchedListener() {
             @Override public void onFetched(User user) {
                 String name = (user != null && user.getUsername() != null)
                         ? user.getUsername()
-                        : "there";
+                        : "there"; // Fallback name
                 String welcome = getString(R.string.welcome_message, name);
-                ui.displayWelcomeMessage(welcome);
+                if (ui != null) { // Check if UI is still valid
+                    ui.displayWelcomeMessage(welcome);
+                }
             }
             @Override public void onError(String err) {
-                // fallback
-                String welcome = getString(R.string.welcome_message, "there");
-                ui.displayWelcomeMessage(welcome);
+                Log.w(TAG, "fetchWelcomeMessage: onError: " + err);
+                String welcome = getString(R.string.welcome_message, "there"); // Fallback name
+                if (ui != null) { // Check if UI is still valid
+                    ui.displayWelcomeMessage(welcome);
+                }
             }
         });
     }
 
+    /**
+     * Fetches top-rated books using the GoogleApiFacade.
+     * @param ui The UI (BrowseBooksUI) to update with the fetched books or show errors.
+     */
     public void fetchTopRatedBooks(BrowseBooksUI ui) {
-        View rootView = ui.getRootView();
-        if (rootView == null) {
-            Log.e(TAG, "fetchTopRatedBooks: UI root view is null.");
+        if (ui == null || ui.getRootView() == null) {
+            Log.e(TAG, "fetchTopRatedBooks: UI or its root view is null. Cannot proceed.");
             return;
         }
-        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(rootView);
+        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(ui.getRootView());
         binding.loadingSpinner.setVisibility(View.VISIBLE);
+        Log.d(TAG, "fetchTopRatedBooks called.");
 
-        GoogleBooksApi api = RetrofitClient.getInstance();
-        api.searchBooks("top rated fiction", API_KEY, 10).enqueue(new Callback<BookResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (ui.getRootView() == null) return;
-                binding.loadingSpinner.setVisibility(View.GONE);
-
-                if (response.isSuccessful() && response.body() != null && response.body().items != null) {
-                    List<Book> books = new ArrayList<>();
-                    for (BookResponse.Item item : response.body().items) {
-                        if (item.volumeInfo == null) continue;
-                        String title = item.volumeInfo.title != null ? item.volumeInfo.title : "No Title";
-                        String thumb = (item.volumeInfo.imageLinks != null && item.volumeInfo.imageLinks.thumbnail != null)
-                                ? item.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") : "";
-                        float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
-                        String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? String.join(", ", item.volumeInfo.authors) : "Unknown Author";
-                        String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "No description available.";
-                        books.add(new Book(title, thumb, rating, author, description));
+        googleApiFacade.fetchTopRatedBooks(
+                10, // Max results for top-rated
+                books -> { // onSuccess
+                    if (ui.getRootView() != null) { // Check if UI is still valid
+                        binding.loadingSpinner.setVisibility(View.GONE);
+                        Log.d(TAG, "fetchTopRatedBooks successful, " + books.size() + " books found.");
+                        ui.updateHotBooks(books);
+                    } else {
+                        Log.w(TAG, "fetchTopRatedBooks onSuccess: UI root view became null.");
                     }
-                    ui.updateHotBooks(books);
-                } else {
-                    Log.e(TAG, "Failed to load hot books. Code: " + response.code() + ", Message: " + response.message());
-                    Toast.makeText(ControllerActivity.this, "Failed to load hot books: " + (response.message() != null && !response.message().isEmpty() ? response.message() : "No items found or error in response"), Toast.LENGTH_SHORT).show();
+                },
+                error -> { // onFailure
+                    if (ui.getRootView() != null) { // Check if UI is still valid
+                        binding.loadingSpinner.setVisibility(View.GONE);
+                        Log.e(TAG, "fetchTopRatedBooks failed: " + error);
+                        Toast.makeText(ControllerActivity.this, "Failed to load hot books: " + error, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Log.w(TAG, "fetchTopRatedBooks onFailure: UI root view became null.");
+                    }
                 }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                if (ui.getRootView() == null) return;
-                binding.loadingSpinner.setVisibility(View.GONE);
-                Log.e(TAG, "API call failed for top rated books", t);
-                Toast.makeText(ControllerActivity.this, "Failed to load hot books: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
+    /**
+     * Fetches books by genre using the GoogleApiFacade.
+     * @param genre The genre to search for.
+     * @param ui The UI (BrowseBooksUI) to update with the fetched books or show errors.
+     */
     public void fetchBooksByGenre(String genre, BrowseBooksUI ui) {
-        View rootView = ui.getRootView();
-        if (rootView == null) {
-            Log.e(TAG, "fetchBooksByGenre: UI root view is null.");
+        if (ui == null || ui.getRootView() == null) {
+            Log.e(TAG, "fetchBooksByGenre: UI or its root view is null. Cannot proceed for genre: " + genre);
             return;
         }
-        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(rootView);
+        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(ui.getRootView());
         binding.loadingSpinner.setVisibility(View.VISIBLE);
+        Log.d(TAG, "fetchBooksByGenre called for genre: " + genre);
 
-        GoogleBooksApi api = RetrofitClient.getInstance();
-        api.searchBooks("subject:" + genre, API_KEY, 12).enqueue(new Callback<BookResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (ui.getRootView() == null) return;
-                binding.loadingSpinner.setVisibility(View.GONE);
-                if (response.isSuccessful() && response.body() != null && response.body().items != null) {
-                    List<Book> books = new ArrayList<>();
-                    for (BookResponse.Item item : response.body().items) {
-                        if (item.volumeInfo == null) continue;
-                        String title = item.volumeInfo.title != null ? item.volumeInfo.title : "No Title";
-                        String thumb = (item.volumeInfo.imageLinks != null && item.volumeInfo.imageLinks.thumbnail != null)
-                                ? item.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") : "";
-                        float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
-                        String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? String.join(", ", item.volumeInfo.authors) : "Unknown Author";
-                        String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "No description available.";
-                        books.add(new Book(title, thumb, rating, author, description));
+        googleApiFacade.fetchBooksByGenre(
+                genre,
+                12, // Max results for genre search
+                books -> { // onSuccess
+                    if (ui.getRootView() != null) {
+                        binding.loadingSpinner.setVisibility(View.GONE);
+                        Log.d(TAG, "fetchBooksByGenre successful for genre '" + genre + "', " + books.size() + " books found.");
+                        ui.updateGenreBooks(books);
+                    } else {
+                        Log.w(TAG, "fetchBooksByGenre onSuccess: UI root view became null for genre: " + genre);
                     }
-                    ui.updateGenreBooks(books);
-                } else {
-                    Log.e(TAG, "Failed to load genre books. Code: " + response.code() + ", Message: " + response.message());
-                    Toast.makeText(ControllerActivity.this, "Failed to load genre books: " + (response.message() != null && !response.message().isEmpty() ? response.message() : "No items found or error in response"), Toast.LENGTH_SHORT).show();
+                },
+                error -> { // onFailure
+                    if (ui.getRootView() != null) {
+                        binding.loadingSpinner.setVisibility(View.GONE);
+                        Log.e(TAG, "fetchBooksByGenre failed for genre '" + genre + "': " + error);
+                        Toast.makeText(ControllerActivity.this, "Failed to load " + genre + " books: " + error, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Log.w(TAG, "fetchBooksByGenre onFailure: UI root view became null for genre: " + genre);
+                    }
                 }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                if (ui.getRootView() == null) return;
-                binding.loadingSpinner.setVisibility(View.GONE);
-                Log.e(TAG, "API call failed for genre books: " + genre, t);
-                Toast.makeText(ControllerActivity.this, "Failed to load " + genre + " books: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
     @Override
@@ -294,20 +293,17 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             Log.w(TAG, "onReviewSubmitted: User not logged in.");
             return;
         }
-
-        // 1) Always set the authorUid
         String uid = currentUser.getUid();
-        review.setAuthorUid(uid);
+        review.setAuthorUid(uid); // Ensure author UID is set
 
-        // 2) Always fetch the real username from Firestore
         firestoreFacade.fetchUsernameForUid(uid,
                 username -> {
-                    review.setUsername(username);
+                    review.setUsername(username); // Set the fetched username
                     proceedWithReviewSubmission(book, review, viewBookUI);
                 },
                 e -> {
                     Log.e(TAG, "Could not fetch username for review submission", e);
-                    Toast.makeText(this, "Could not fetch username. Review not posted.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not fetch username. Review not posted: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
         );
     }
@@ -364,18 +360,19 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             return;
         }
         String uid = currentUser.getUid();
+        newReview.setAuthorUid(uid); // Ensure author UID is set on the newReview object
+
         firestoreFacade.fetchUsernameForUid(uid,
                 username -> {
                     Log.d(TAG, "Fetched username: " + username + " for review submission via ReviewManager.");
-                    Review reviewToSave = new Review(
-                            username, newReview.getRating(), newReview.getComment(),
-                            null, selectedBook.getTitle(), selectedBook.getThumbnailUrl(), uid);
-                    reviewManager.postReview(selectedBook, reviewToSave, new ReviewManager.OnReviewSavedListener() {
+                    newReview.setUsername(username); // Set username on the newReview object
+                    // The ReviewManager might handle its own Firestore interaction or could be refactored further
+                    reviewManager.postReview(selectedBook, newReview, new ReviewManager.OnReviewSavedListener() {
                         @Override
                         public void onReviewSaved() {
                             Log.d(TAG, "Review submitted via ReviewManager successfully.");
                             if (viewBookFragment != null && viewBookFragment.isAdded()) {
-                                viewBookFragment.postReview(reviewToSave);
+                                viewBookFragment.postReview(newReview); // Pass the potentially updated newReview
                             }
                             Toast.makeText(ControllerActivity.this, "Review submitted!", Toast.LENGTH_SHORT).show();
                         }
@@ -395,13 +392,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     @Override
     public void onEditReviewRequested(Book book, Review review, ViewBookUI viewUI) {
+        // Using FirestoreFacade for updating reviews consistently
         firestoreFacade.updateReview(
                 review,
                 () -> {
                     Log.d(TAG, "Review updated via facade for book: " + book.getTitle());
                     if (viewUI != null) {
-                        // pull down the very same collection the facade writes to
-                        fetchReviews(book, viewUI);
+                        fetchReviews(book, viewUI); // Refresh reviews list
                     }
                     Toast.makeText(ControllerActivity.this, "Review updated!", Toast.LENGTH_SHORT).show();
                 },
@@ -415,21 +412,21 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
     @Override
     public void onDeleteReviewRequested(Book book, Review review, ViewBookUI viewUI) {
         Log.d(TAG, "Delete review requested for review ID: " + review.getReviewId());
-        reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
-            @Override
-            public void onReviewDeleted() {
-                Log.d(TAG, "Review deleted successfully via ReviewManager.");
-                if (viewUI != null) {
-                    fetchReviews(book, viewUI);
+        // Using FirestoreFacade for deleting reviews consistently
+        firestoreFacade.deleteReview(
+                review,
+                () -> {
+                    Log.d(TAG, "Review deleted successfully via facade for book: " + book.getTitle());
+                    if (viewUI != null) {
+                        fetchReviews(book, viewUI); // Refresh reviews list
+                    }
+                    Toast.makeText(ControllerActivity.this, "Review deleted!", Toast.LENGTH_SHORT).show();
+                },
+                err -> {
+                    Log.e(TAG, "Review delete failed via facade for book: " + book.getTitle(), new Exception(err));
+                    Toast.makeText(ControllerActivity.this, "Delete failed: " + err, Toast.LENGTH_SHORT).show();
                 }
-                Toast.makeText(ControllerActivity.this, "Review deleted!", Toast.LENGTH_SHORT).show();
-            }
-            @Override
-            public void onReviewDeleteFailed(Exception e) {
-                Log.e(TAG, "Review delete failed via ReviewManager", e);
-                Toast.makeText(ControllerActivity.this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
     public void fetchUserReviews(String username, ViewProfileUI ui) {
@@ -446,7 +443,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
             public void onError(String error) {
                 Log.e(TAG, "Failed to load user reviews for " + username + ": " + error);
                 if (ui != null) {
-                    // ui.showError("Error loading user reviews: " + error); // If ViewProfileUI has showError
+                    // ui.showError("Error loading user reviews: " + error);
                 }
                 Toast.makeText(ControllerActivity.this, "Error loading user reviews: " + error, Toast.LENGTH_LONG).show();
             }
@@ -456,18 +453,13 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
         Log.d(TAG, "Edit user review requested for review ID: " + review.getReviewId() + " by user " + currentUsername);
-
-        // 1) Update via the same facade that you use for reads:
         firestoreFacade.updateReview(
                 review,
                 () -> {
                     Log.d(TAG, "User review updated successfully via facade for " + currentUsername);
-
-                    // 2a) Refresh the profile screen
                     if (ui != null) {
-                        fetchUserReviews(currentUsername, ui);
+                        fetchUserReviews(currentUsername, ui); // Use currentUsername (profile user) to refresh
                     }
-
                     Toast.makeText(ControllerActivity.this, "Your review updated!", Toast.LENGTH_SHORT).show();
                 },
                 err -> {
@@ -479,21 +471,20 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
     public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
         Log.d(TAG, "Delete user review requested for review ID: " + review.getReviewId() + " by user " + currentUsername);
-        reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
-            @Override
-            public void onReviewDeleted() {
-                Log.d(TAG, "User review deleted successfully by " + currentUsername);
-                if (ui != null) {
-                    fetchUserReviews(review.getUsername(), ui);
+        firestoreFacade.deleteReview(
+                review,
+                () -> {
+                    Log.d(TAG, "User review deleted successfully by " + currentUsername + " via facade.");
+                    if (ui != null) {
+                        fetchUserReviews(currentUsername, ui); // Use currentUsername (profile user) to refresh
+                    }
+                    Toast.makeText(ControllerActivity.this, "Your review deleted!", Toast.LENGTH_SHORT).show();
+                },
+                err -> {
+                    Log.e(TAG, "User review delete failed for " + currentUsername + " via facade.", new Exception(err));
+                    Toast.makeText(ControllerActivity.this, "Delete failed: " + err, Toast.LENGTH_SHORT).show();
                 }
-                Toast.makeText(ControllerActivity.this, "Your review deleted!", Toast.LENGTH_SHORT).show();
-            }
-            @Override
-            public void onReviewDeleteFailed(Exception e) {
-                Log.e(TAG, "User review delete failed for " + currentUsername, e);
-                Toast.makeText(ControllerActivity.this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
     }
 
     public void fetchSavedBooks(ViewSavedBooksUI ui) {
@@ -529,12 +520,11 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         }
         String uid = user.getUid();
         Log.d(TAG, "Saving book: " + book.getTitle() + " for UID: " + uid);
-        // Corrected to use OnBookSaveOpListener
         firestoreFacade.saveBook(uid, book, new FirestoreFacade.OnBookSaveOpListener() {
             @Override
             public void onSuccess(boolean isSaved) {
                 Log.d(TAG, "Book saved successfully: " + book.getTitle() + " for UID: " + uid);
-                if (ui != null) ui.onBookSaveState(true); // isSaved will be true
+                if (ui != null) ui.onBookSaveState(true);
                 Toast.makeText(ControllerActivity.this, "Book saved!", Toast.LENGTH_SHORT).show();
             }
             @Override
@@ -555,12 +545,11 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         }
         String uid = user.getUid();
         Log.d(TAG, "Removing saved book: " + book.getTitle() + " for UID: " + uid);
-        // Corrected to use OnBookSaveOpListener
         firestoreFacade.removeSavedBook(uid, book, new FirestoreFacade.OnBookSaveOpListener() {
             @Override
             public void onSuccess(boolean isSaved) {
                 Log.d(TAG, "Book removed from saved successfully: " + book.getTitle() + " for UID: " + uid);
-                if (ui != null) ui.onBookSaveState(false); // isSaved will be false
+                if (ui != null) ui.onBookSaveState(false);
                 Toast.makeText(ControllerActivity.this, "Book removed from saved!", Toast.LENGTH_SHORT).show();
             }
             @Override
@@ -581,15 +570,10 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         }
         String uid = user.getUid();
         Log.d(TAG, "Checking if book is saved: " + book.getTitle() + " for UID: " + uid);
-        // Using Consumer<Boolean> as expected by FirestoreFacade.isBookSaved
         firestoreFacade.isBookSaved(uid, book, isSaved -> {
             Log.d(TAG, "Book " + book.getTitle() + (isSaved ? " is saved." : " is not saved.") + " for UID: " + uid);
             if (ui != null) {
                 ui.onBookSaveState(isSaved);
-                // Note: The facade's isBookSaved(Consumer<Boolean>) doesn't directly provide an error message string here.
-                // Errors are logged in the facade and result in 'isSaved' being false.
-                // If a distinct error message is needed in the UI for this check,
-                // FirestoreFacade.isBookSaved would need a listener with an onError callback.
             }
         });
     }
