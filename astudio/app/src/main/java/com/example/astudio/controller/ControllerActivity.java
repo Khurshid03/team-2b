@@ -60,7 +60,7 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
 
 
     // Google Books API Key - consider moving to a secure configuration file
-    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14"; // TODO: Replace with your actual API key
+    private static final String API_KEY = "API_KEY"; // TODO: Replace with your actual API key
 
 
     @Override

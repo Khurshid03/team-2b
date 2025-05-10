@@ -23,7 +23,7 @@ import retrofit2.Response;
 public class GoogleApiFacade {
     private static final String TAG = "GoogleApiFacade";
     // TODO: Consider moving API key to BuildConfig or a secure config file
-    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
+    private static final String API_KEY = "API_KEY";
 
     private final GoogleBooksApi api;
 
