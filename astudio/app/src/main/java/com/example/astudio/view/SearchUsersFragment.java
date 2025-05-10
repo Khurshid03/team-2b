@@ -1,6 +1,7 @@
 package com.example.astudio.view;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,26 +16,25 @@ import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
 import com.example.astudio.databinding.FragmentSearchUsersBinding;
 import com.example.astudio.model.User;
-import com.example.astudio.model.UserManager;
+// Import listener interfaces from FirestoreFacade
+import com.example.astudio.persistence.FirestoreFacade;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Fragment that allows searching for users and following/unfollowing them.
  */
 public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
 
+    private static final String FRAGMENT_TAG = "SearchUsersFragment"; // For logging
     private FragmentSearchUsersBinding binding;
     private SearchUsersAdapter adapter;
     private final List<User> results = new ArrayList<>();
     private ControllerActivity controller;
-    private String myUid;
+    private String myUid; // Current user's UID
 
     @Nullable
     @Override
@@ -50,70 +50,99 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         super.onViewCreated(view, savedInstanceState);
         controller = (ControllerActivity) requireActivity();
 
-        // Get current user's username
-// new—check for null first
-        FirebaseUser me = FirebaseAuth.getInstance().getCurrentUser();
-        myUid = (me != null ? me.getUid() : "");
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "User not logged in.", Toast.LENGTH_SHORT).show();
+            Log.e(FRAGMENT_TAG, "Current user is null. Cannot proceed.");
+            // Optionally, navigate away or disable functionality
+            return;
+        }
+        myUid = currentUser.getUid();
 
         // Initialize adapter BEFORE setting it to the RecyclerView
         adapter = new SearchUsersAdapter(results, myUid, new SearchUsersAdapter.ActionListener() {
             @Override
             public void onFollowToggled(User user, boolean shouldFollow) {
+                if (user == null || user.getUsername() == null) {
+                    Log.e(FRAGMENT_TAG, "User or username is null in onFollowToggled.");
+                    Toast.makeText(getContext(), "Error: User data is missing.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 if (shouldFollow) {
+                    // myUid is no longer passed; controller handles it
                     controller.follow(
-                            myUid,
                             user.getUsername(),
                             () -> {
-                                // 1) update your Search list button
-                                adapter.getFollowingUsernames().add(user.getUsername());
-                                adapter.notifyItemChanged(results.indexOf(user));
+                                Log.d(FRAGMENT_TAG, "Successfully followed user: " + user.getUsername());
+                                if (adapter.getFollowingUsernames().add(user.getUsername())) {
+                                    adapter.notifyItemChanged(results.indexOf(user));
+                                }
 
-                                // 2) refresh the other user's profile badge if it's currently visible
-                                Fragment top = requireActivity()
-                                        .getSupportFragmentManager()
-                                        .findFragmentById(R.id.fragmentContainerView);
-                                if (top instanceof ViewProfileFragment) {
-                                    String displayed = ((ViewProfileFragment)top)
-                                            .binding.tvUsername.getText().toString();
-                                    if (displayed.equals(user.getUsername())) {
+                                // Refresh the other user's profile badge if it's currently visible
+                                Fragment topFragment = getParentFragmentManager().findFragmentById(R.id.fragmentContainerView);
+                                if (topFragment instanceof ViewProfileFragment) {
+                                    ViewProfileFragment profileFragment = (ViewProfileFragment) topFragment;
+                                    // Check if the displayed profile is the one being followed
+                                    if (profileFragment.binding != null && user.getUsername().equals(profileFragment.binding.tvUsername.getText().toString())) {
                                         controller.fetchFollowersCount(
                                                 user.getUsername(),
-                                                new ControllerActivity.OnCountFetchedListener() {
-                                                    @Override public void onCount(int c) {
-                                                        ((ViewProfileFragment)top)
-                                                                .binding.followersButton
-                                                                .setText(getString(R.string.followers_count, c));
+                                                // Use FirestoreFacade.OnCountFetchedListener
+                                                new FirestoreFacade.OnCountFetchedListener() {
+                                                    @Override
+                                                    public void onCount(int count) {
+                                                        if (profileFragment.isAdded() && profileFragment.binding != null) {
+                                                            profileFragment.binding.followersButton.setText(getString(R.string.followers_count, count));
+                                                        }
                                                     }
-                                                    @Override public void onError(String e) { /*…*/ }
+                                                    @Override
+                                                    public void onError(String error) {
+                                                        Log.e(FRAGMENT_TAG, "Error fetching followers count for " + user.getUsername() + ": " + error);
+                                                        // Optionally show a toast or log
+                                                    }
                                                 }
                                         );
                                     }
                                 }
                             },
-                            err -> Toast.makeText(getContext(), "Follow failed: "+err, Toast.LENGTH_SHORT).show()
+                            err -> {
+                                Log.e(FRAGMENT_TAG, "Follow failed for " + user.getUsername() + ": " + err);
+                                Toast.makeText(getContext(), "Follow failed: " + err, Toast.LENGTH_SHORT).show();
+                            }
                     );
                 } else {
+                    // myUid is no longer passed; controller handles it
                     controller.unfollow(
-                            myUid,
                             user.getUsername(),
                             () -> {
-                                adapter.getFollowingUsernames().remove(user.getUsername());
-                                adapter.notifyItemChanged(results.indexOf(user));
+                                Log.d(FRAGMENT_TAG, "Successfully unfollowed user: " + user.getUsername());
+                                if(adapter.getFollowingUsernames().remove(user.getUsername())) {
+                                    adapter.notifyItemChanged(results.indexOf(user));
+                                }
                             },
-                            err -> Toast.makeText(getContext(), "Unfollow failed: " + err, Toast.LENGTH_SHORT).show()
+                            err -> {
+                                Log.e(FRAGMENT_TAG, "Unfollow failed for " + user.getUsername() + ": " + err);
+                                Toast.makeText(getContext(), "Unfollow failed: " + err, Toast.LENGTH_SHORT).show();
+                            }
                     );
                 }
             }
 
-
-
             @Override
             public void onUserClicked(User user) {
+                if (user == null || user.getId() == null) {
+                    Log.e(FRAGMENT_TAG, "User or user ID is null in onUserClicked.");
+                    Toast.makeText(getContext(), "Cannot view profile: User data missing.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Log.d(FRAGMENT_TAG, "User clicked: " + user.getUsername() + " with ID: " + user.getId());
                 ViewProfileFragment fragment = new ViewProfileFragment();
                 Bundle args = new Bundle();
                 args.putString("userId", user.getId());
                 fragment.setArguments(args);
-                requireActivity().getSupportFragmentManager()
+
+                // Use getParentFragmentManager() for fragment transactions from within a fragment
+                getParentFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragmentContainerView, fragment)
                         .addToBackStack(null)
@@ -124,18 +153,18 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         binding.searchUsersRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.searchUsersRecycler.setAdapter(adapter);
 
-        String myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
         // Load who I currently follow
-        controller.fetchFollowingUsernames(myUid, new ControllerActivity.OnFollowedListFetchedListener() {
+        // myUid should be valid here due to the check above
+        controller.fetchFollowingUsernames(myUid, new FirestoreFacade.OnFollowedListFetchedListener() {
             @Override
             public void onFetched(List<String> usernames) {
+                Log.d(FRAGMENT_TAG, "Fetched " + usernames.size() + " followed usernames.");
                 adapter.setFollowingUsernames(usernames);
-
-                adapter.notifyDataSetChanged();
+                // adapter.notifyDataSetChanged(); // Already done in setFollowingUsernames or should be if it modifies data
             }
             @Override
             public void onError(String err) {
+                Log.e(FRAGMENT_TAG, "Error loading follow list: " + err);
                 Toast.makeText(getContext(), "Error loading follow list: " + err, Toast.LENGTH_SHORT).show();
             }
         });
@@ -144,7 +173,10 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         binding.goButton.setOnClickListener(v -> {
             String query = binding.searchInput.getText().toString().trim();
             if (!query.isEmpty()) {
-                controller.searchUsers(query, SearchUsersFragment.this);
+                Log.d(FRAGMENT_TAG, "Searching for users with query: " + query);
+                controller.searchUsers(query, SearchUsersFragment.this); // 'this' implements ViewSearchUsersUI
+            } else {
+                Toast.makeText(getContext(), "Please enter a search query.", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -154,18 +186,25 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         results.clear();
         if (users != null) {
             results.addAll(users);
+            Log.d(FRAGMENT_TAG, "Displaying " + users.size() + " search results.");
+        } else {
+            Log.d(FRAGMENT_TAG, "No search results to display.");
         }
-        if (adapter != null) adapter.notifyDataSetChanged();
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
     public void showSearchError(String message) {
+        Log.e(FRAGMENT_TAG, "Search error: " + message);
         Toast.makeText(getContext(), "Search error: " + message, Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
+        binding = null; // Important to prevent memory leaks
+        Log.d(FRAGMENT_TAG, "onDestroyView called.");
     }
 }

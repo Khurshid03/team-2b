@@ -1,5 +1,9 @@
 package com.example.astudio.controller;
+
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,10 +12,11 @@ import com.example.astudio.databinding.FragmentBrowseBooksBinding;
 import com.example.astudio.model.Book;
 import com.example.astudio.model.BookResponse;
 import com.example.astudio.model.Review;
-import com.example.astudio.model.ReviewManager; // Assuming ReviewManager exists and handles Firestore interaction
+import com.example.astudio.model.ReviewManager;
 import com.example.astudio.model.User;
 import com.example.astudio.network.GoogleBooksApi;
 import com.example.astudio.network.RetrofitClient;
+import com.example.astudio.persistence.FirestoreFacade; // Import the facade
 import com.example.astudio.view.BrowseBooksFragment;
 import com.example.astudio.view.CreateAccountFragment;
 import com.example.astudio.view.CreateAccountUI;
@@ -20,31 +25,18 @@ import com.example.astudio.view.LoginUI;
 import com.example.astudio.view.MainUI;
 import com.example.astudio.view.ViewBookFragment;
 import com.example.astudio.view.BrowseBooksUI;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-
 import com.example.astudio.view.ViewBookUI;
 import com.example.astudio.view.ViewProfileUI;
 import com.example.astudio.view.ViewSavedBooksUI;
 import com.example.astudio.view.ViewSearchUsersUI;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot; // Import QueryDocumentSnapshot
 
-import android.util.Log;
-import android.view.View;
-import android.widget.Toast;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer; // Import Consumer for isBookSaved
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -54,18 +46,18 @@ import retrofit2.Response;
  * This class acts as the controller for the entire application. It keeps track of the application
  * state, directs UI updates, and listens for UI-generated events.
  */
-
 public class ControllerActivity extends AppCompatActivity implements BrowseBooksUI.BrowseBooksListener,
-        CreateAccountUI.CreateAccountListener, LoginUI.LoginListener, ViewBookUI.ViewBookListener{
+        CreateAccountUI.CreateAccountListener, LoginUI.LoginListener, ViewBookUI.ViewBookListener {
 
+    private static final String TAG = "ControllerActivity";
     public MainUI mainUI;
-    private final ReviewManager reviewManager = new ReviewManager(); // Assuming ReviewManager handles the actual Firestore review operations
-    /**
-     * This method is called when the activity is created. It initializes the UI and sets up the
-     * default fragment (LoginFragment).
-     *
-     * @param savedInstanceState The saved instance state.
-     */
+    private final ReviewManager reviewManager = new ReviewManager(); // Handles review-specific logic (CRUD via its own Firestore calls)
+    private FirestoreFacade firestoreFacade; // Facade for other Firestore operations
+    private FirebaseAuth mAuth;
+
+    // Google Books API Key - consider moving to a secure configuration file
+    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14"; // TODO: Replace with your actual API key
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,82 +66,60 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
         this.mainUI = new MainUI(this);
         setContentView(this.mainUI.getRootView());
 
+        this.firestoreFacade = new FirestoreFacade(); // Initialize the facade
+        this.mAuth = FirebaseAuth.getInstance(); // Initialize FirebaseAuth
+
         // Display CreateAccountFragment initially
         CreateAccountFragment createAccountFragment = new CreateAccountFragment();
         createAccountFragment.setListener(this);
         this.mainUI.displayFragment(createAccountFragment);
     }
 
-    /**
-     * This method is called by the BrowseBooksFragment when the user selects a book.
-     * It navigates to the ViewBookFragment and passes the selected book details.
-     *
-     * @param book The selected book.
-     */
     @Override
     public void onBookSelected(Book book) {
-        // Create the ViewBookFragment and pass the selected Book as a Serializable
         ViewBookFragment viewBookFragment = new ViewBookFragment();
-        viewBookFragment.setListener((ViewBookUI.ViewBookListener) this);
+        viewBookFragment.setListener(this); // 'this' implements ViewBookUI.ViewBookListener
         Bundle args = new Bundle();
-        args.putSerializable("book", (Serializable) book);
-        // Optionally, pass additional book details if needed
+        args.putSerializable("book", book); // Book class must implement Serializable
+        // Pass other necessary details if they are not part of the Book object or for convenience
         args.putString("description", book.getDescription());
         args.putString("author", book.getAuthor());
         viewBookFragment.setArguments(args);
         mainUI.displayFragment(viewBookFragment);
     }
 
-    /**
-     * This method is called by the BrowseBooksFragment when the user selects a genre.
-     * It can be used to filter books based on the selected genre.
-     *
-     * @param genre The selected genre.
-     */
-
     @Override
     public void onGenreSelected(String genre) {
-        // Handle genre selections if needed
+        // This method is called when a genre is selected in the BrowseBooksFragment.
+        Log.d(TAG, "Genre selected: " + genre);
     }
-
-
-    /**
-     * Creates a new account for the user.
-     * This method is called when the user clicks the "Create Account" button in the CreateAccountFragment.
-     *
-     */
 
     @Override
     public void onCreateAccount(String username, String email, String password, CreateAccountUI ui) {
-        FirebaseAuth mAuth = FirebaseAuth.getInstance();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();  // Firestore reference
-
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+                .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        String uid = Objects.requireNonNull(mAuth.getCurrentUser()).getUid();
-
-                        // Create a new user object
-                        Map<String, Object> user = new HashMap<>();
-                        user.put("username", username);
-                        user.put("email", email);
-                        user.put("bio", "");  // Start with empty bio
-
-                        // Save the user object to Firestore
-                        db.collection("Users")
-                                .document(uid)
-                                .set(user)
-                                .addOnSuccessListener(aVoid -> {
-                                    // Successfully saved user data
-                                    BrowseBooksFragment fragment = new BrowseBooksFragment();
-                                    fragment.setListener(this);
-                                    if (username != null){
-                                    mainUI.displayFragment(fragment);}
-                                })
-                                .addOnFailureListener(e -> {
-                                    Toast.makeText(this, "Failed to save user data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                });
+                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            String uid = firebaseUser.getUid();
+                            firestoreFacade.saveNewUser(uid, username, email,
+                                    () -> {
+                                        Log.d(TAG, "User data saved to Firestore for UID: " + uid);
+                                        BrowseBooksFragment fragment = new BrowseBooksFragment();
+                                        fragment.setListener(this);
+                                        mainUI.displayFragment(fragment);
+                                    },
+                                    e -> {
+                                        Log.e(TAG, "Failed to save user data to Firestore", e);
+                                        Toast.makeText(this, "Failed to save user data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                            );
+                        } else {
+                            Log.e(TAG, "User created but mAuth.getCurrentUser() is null");
+                            Toast.makeText(this, "Account creation partially failed. Please try logging in.", Toast.LENGTH_LONG).show();
+                        }
                     } else {
+                        Log.e(TAG, "Account creation failed", task.getException());
                         Toast.makeText(this, "Account creation failed: " + Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -158,590 +128,482 @@ public class ControllerActivity extends AppCompatActivity implements BrowseBooks
     @Override
     public void onProceedToLogin() {
         LoginFragment loginFragment = new LoginFragment();
-        loginFragment.setListener((LoginUI.LoginListener) this);
+        loginFragment.setListener(this);
         mainUI.displayFragment(loginFragment);
     }
 
     @Override
     public void onLogin(String username) {
-
+        Log.d(TAG, "onLogin with username only called (currently not implemented for navigation): " + username);
     }
 
     @Override
     public void onLogin(String email, String password, LoginUI ui) {
-        FirebaseAuth mAuth = FirebaseAuth.getInstance();
         mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+                .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Successfully logged in
+                        Log.d(TAG, "Login successful for email: " + email);
                         BrowseBooksFragment fragment = new BrowseBooksFragment();
                         fragment.setListener(this);
                         mainUI.displayFragment(fragment);
                     } else {
-                        Toast.makeText(this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Login failed for email: " + email, task.getException());
+                        Toast.makeText(this, "Login failed: " + Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-
-
-    private static final String API_KEY = "PUT_API_HERE";
-
-    /**
-     * Fetches the top-rated books from the Google Books API and updates the hot books RecyclerView.
-     * This method makes an asynchronous API call to fetch the books.
-     *
-     * @param ui The UI interface to update the hot books.
-     */
     public void fetchTopRatedBooks(BrowseBooksUI ui) {
-        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(ui.getRootView());
+        View rootView = ui.getRootView();
+        if (rootView == null) {
+            Log.e(TAG, "fetchTopRatedBooks: UI root view is null.");
+            return;
+        }
+        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(rootView);
         binding.loadingSpinner.setVisibility(View.VISIBLE);
-
 
         GoogleBooksApi api = RetrofitClient.getInstance();
         api.searchBooks("top rated fiction", API_KEY, 10).enqueue(new Callback<BookResponse>() {
             @Override
             public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (ui.getRootView() == null) return;
+                binding.loadingSpinner.setVisibility(View.GONE);
+
+                if (response.isSuccessful() && response.body() != null && response.body().items != null) {
                     List<Book> books = new ArrayList<>();
                     for (BookResponse.Item item : response.body().items) {
-                        String title = item.volumeInfo.title;
-                        String thumb = item.volumeInfo.imageLinks != null
-                                ? item.volumeInfo.imageLinks.thumbnail : "";
-                        if (!thumb.isEmpty()) {
-                            thumb = thumb.replace("http://", "https://");
-                        }
-                        float rating = item.volumeInfo.averageRating != null ? item.volumeInfo.averageRating : 0f;
+                        if (item.volumeInfo == null) continue;
+                        String title = item.volumeInfo.title != null ? item.volumeInfo.title : "No Title";
+                        String thumb = (item.volumeInfo.imageLinks != null && item.volumeInfo.imageLinks.thumbnail != null)
+                                ? item.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") : "";
+                        float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
                         String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "Unknown Author";
-                        String description = item.volumeInfo.description != null ? item.volumeInfo.description : "No description available";
+                                ? String.join(", ", item.volumeInfo.authors) : "Unknown Author";
+                        String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "No description available.";
                         books.add(new Book(title, thumb, rating, author, description));
                     }
-                    ui.updateHotBooks(books); // <- Call view method to update
+                    ui.updateHotBooks(books);
+                } else {
+                    Log.e(TAG, "Failed to load hot books. Code: " + response.code() + ", Message: " + response.message());
+                    Toast.makeText(ControllerActivity.this, "Failed to load hot books: " + (response.message() != null && !response.message().isEmpty() ? response.message() : "No items found or error in response"), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                Toast.makeText(ControllerActivity.this, "Failed to load hot books", Toast.LENGTH_SHORT).show();
+                if (ui.getRootView() == null) return;
+                binding.loadingSpinner.setVisibility(View.GONE);
+                Log.e(TAG, "API call failed for top rated books", t);
+                Toast.makeText(ControllerActivity.this, "Failed to load hot books: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-    /**
-     * Fetches books of a specific genre from the Google Books API and updates the genre books RecyclerView.
-     * This method makes an asynchronous API call to fetch the books.
-     *
-     * @param genre The genre of books to be fetched.
-     */
 
     public void fetchBooksByGenre(String genre, BrowseBooksUI ui) {
-        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(ui.getRootView());
+        View rootView = ui.getRootView();
+        if (rootView == null) {
+            Log.e(TAG, "fetchBooksByGenre: UI root view is null.");
+            return;
+        }
+        FragmentBrowseBooksBinding binding = FragmentBrowseBooksBinding.bind(rootView);
         binding.loadingSpinner.setVisibility(View.VISIBLE);
 
-
         GoogleBooksApi api = RetrofitClient.getInstance();
-        api.searchBooks(genre, API_KEY, 12).enqueue(new Callback<BookResponse>() {
+        api.searchBooks("subject:" + genre, API_KEY, 12).enqueue(new Callback<BookResponse>() {
             @Override
             public void onResponse(@NonNull Call<BookResponse> call, @NonNull Response<BookResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (ui.getRootView() == null) return;
+                binding.loadingSpinner.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null && response.body().items != null) {
                     List<Book> books = new ArrayList<>();
                     for (BookResponse.Item item : response.body().items) {
-                        String title = item.volumeInfo.title;
-                        String thumb = item.volumeInfo.imageLinks != null
-                                ? item.volumeInfo.imageLinks.thumbnail : "";
-                        if (!thumb.isEmpty()) {
-                            thumb = thumb.replace("http://", "https://");
-                        }
-                        float rating = item.volumeInfo.averageRating != null ? item.volumeInfo.averageRating : 0f;
+                        if (item.volumeInfo == null) continue;
+                        String title = item.volumeInfo.title != null ? item.volumeInfo.title : "No Title";
+                        String thumb = (item.volumeInfo.imageLinks != null && item.volumeInfo.imageLinks.thumbnail != null)
+                                ? item.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") : "";
+                        float rating = (item.volumeInfo.averageRating != null) ? item.volumeInfo.averageRating : 0f;
                         String author = (item.volumeInfo.authors != null && !item.volumeInfo.authors.isEmpty())
-                                ? item.volumeInfo.authors.get(0) : "Unknown Author";
-                        String description = item.volumeInfo.description != null ? item.volumeInfo.description : "No description available";
+                                ? String.join(", ", item.volumeInfo.authors) : "Unknown Author";
+                        String description = (item.volumeInfo.description != null) ? item.volumeInfo.description : "No description available.";
                         books.add(new Book(title, thumb, rating, author, description));
                     }
-                    ui.updateGenreBooks(books); // <- Call view method to update
+                    ui.updateGenreBooks(books);
+                } else {
+                    Log.e(TAG, "Failed to load genre books. Code: " + response.code() + ", Message: " + response.message());
+                    Toast.makeText(ControllerActivity.this, "Failed to load genre books: " + (response.message() != null && !response.message().isEmpty() ? response.message() : "No items found or error in response"), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<BookResponse> call, @NonNull Throwable t) {
-                Toast.makeText(ControllerActivity.this, "Failed to load genre books", Toast.LENGTH_SHORT).show();
+                if (ui.getRootView() == null) return;
+                binding.loadingSpinner.setVisibility(View.GONE);
+                Log.e(TAG, "API call failed for genre books: " + genre, t);
+                Toast.makeText(ControllerActivity.this, "Failed to load " + genre + " books: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-
-    /**
-     * This method is called when the user clicks the "Post Review" button in the ViewBookFragment.
-     * It opens a dialog for the user to submit their review.
-     *
-     * @param book The book for which the review is being posted.
-     */
 
     @Override
     public void onReviewSubmitted(Book book, Review review, ViewBookUI viewBookUI) {
-        // This method seems to be an older version of review submission.
-        // The onSubmitReview method below is likely the one being used.
-        // Keeping for now, but consider consolidating review submission logic.
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "User not logged in. Cannot submit review.", Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "onReviewSubmitted: User not logged in.");
+            return;
+        }
+        if (review.getAuthorUid() == null || review.getAuthorUid().isEmpty()) {
+            review.setAuthorUid(currentUser.getUid());
+        }
+        if (review.getUsername() == null || review.getUsername().isEmpty()) {
+            firestoreFacade.fetchUsernameForUid(currentUser.getUid(),
+                    username -> {
+                        review.setUsername(username);
+                        proceedWithReviewSubmission(book, review, viewBookUI);
+                    },
+                    e -> {
+                        Log.e(TAG, "Could not fetch username for review submission", e);
+                        Toast.makeText(this, "Could not fetch username. Review not posted.", Toast.LENGTH_SHORT).show();
+                    });
+        } else {
+            proceedWithReviewSubmission(book, review, viewBookUI);
+        }
+    }
 
-        Map<String, Object> reviewData = new HashMap<>();
-        reviewData.put("username", review.getUsername());
-        reviewData.put("rating", review.getRating());
-        reviewData.put("comment", review.getComment());
-        reviewData.put("timestamp", System.currentTimeMillis());
-        reviewData.put("thumbnailUrl", book.getThumbnailUrl());
-        // TODO: Add authorUid here when saving reviews in this method if it's still used.
-
-        db.collection("Reviews")
-                .document(book.getTitle()) // Use book title as document ID for now (better would be a real ID)
-                .collection("UserReviews")  // Sub-collection of reviews
-                .add(reviewData)
-                .addOnSuccessListener(documentReference -> {
-                    viewBookUI.postReview(review); // Update UI immediately after success
-                })
-                .addOnFailureListener(e -> {
+    private void proceedWithReviewSubmission(Book book, Review review, ViewBookUI viewBookUI) {
+        firestoreFacade.submitReview(book, review,
+                documentId -> {
+                    Log.d(TAG, "Review posted via facade, docID: " + documentId);
+                    review.setReviewId(documentId);
+                    if (viewBookUI != null) {
+                        viewBookUI.postReview(review);
+                    }
+                    Toast.makeText(ControllerActivity.this, "Review posted!", Toast.LENGTH_SHORT).show();
+                },
+                e -> {
+                    Log.e(TAG, "Failed to save review via facade", e);
                     Toast.makeText(ControllerActivity.this, "Failed to save review: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                }
+        );
     }
 
     @Override
     public void fetchReviews(Book book, ViewBookUI viewBookUI) {
-        fetchReviewsForBook(book, viewBookUI);
+        Log.d(TAG, "fetchReviews called for book: " + book.getTitle());
+        firestoreFacade.fetchReviewsForBook(book, new FirestoreFacade.OnReviewsFetchedListener() {
+            @Override
+            public void onFetched(List<Review> reviews) {
+                Log.d(TAG, "Fetched " + reviews.size() + " reviews for " + book.getTitle() + " (via fetchReviews)");
+                if (viewBookUI != null) {
+                    viewBookUI.displayReviews(reviews);
+                }
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Failed to load reviews for " + book.getTitle() + ": " + error + " (via fetchReviews)");
+                Toast.makeText(ControllerActivity.this, "Failed to load reviews: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void fetchReviewsForBook(Book book, ViewBookUI viewBookUI) {
+        Log.d(TAG, "fetchReviewsForBook called for book: " + book.getTitle() + ". Delegating to fetchReviews.");
+        fetchReviews(book, viewBookUI);
     }
 
     @Override
     public void onSubmitReview(Book selectedBook, Review newReview, ViewBookFragment viewBookFragment) {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
-
-        if (uid == null) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "onSubmitReview: User not logged in.");
             return;
         }
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("Users")
-                .document(uid)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    String username = documentSnapshot.getString("username");
-
-                    // Create the Review object with the authorUid
+        String uid = currentUser.getUid();
+        firestoreFacade.fetchUsernameForUid(uid,
+                username -> {
+                    Log.d(TAG, "Fetched username: " + username + " for review submission via ReviewManager.");
                     Review reviewToSave = new Review(
-                            username,
-                            newReview.getRating(),
-                            newReview.getComment(),
-                            "",  // placeholder for reviewId, will be set by Firestore
-                            selectedBook.getTitle(), // or selectedBook.getId() if using a unique ID field
-                            selectedBook.getThumbnailUrl(), // Assuming thumbnail URL is part of the book object
-                            uid // <--- Pass the current user's UID as authorUid
-                    );
-
-                    // Pass the Review object with authorUid to the ReviewManager
-                    // Assuming ReviewManager.postReview saves the authorUid field to Firestore
+                            username, newReview.getRating(), newReview.getComment(),
+                            null, selectedBook.getTitle(), selectedBook.getThumbnailUrl(), uid);
                     reviewManager.postReview(selectedBook, reviewToSave, new ReviewManager.OnReviewSavedListener() {
                         @Override
                         public void onReviewSaved() {
-                            // Update the UI with the review that includes the authorUid
-                            viewBookFragment.postReview(reviewToSave);
+                            Log.d(TAG, "Review submitted via ReviewManager successfully.");
+                            if (viewBookFragment != null && viewBookFragment.isAdded()) {
+                                viewBookFragment.postReview(reviewToSave);
+                            }
+                            Toast.makeText(ControllerActivity.this, "Review submitted!", Toast.LENGTH_SHORT).show();
                         }
-
                         @Override
                         public void onReviewSaveFailed(Exception e) {
+                            Log.e(TAG, "Failed to post review via ReviewManager", e);
                             Toast.makeText(ControllerActivity.this, "Failed to post review: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .addOnFailureListener(e -> {
+                },
+                e -> {
+                    Log.e(TAG, "Failed to fetch user info for review submission via ReviewManager", e);
                     Toast.makeText(this, "Failed to fetch user info: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                }
+        );
     }
-
-    public void fetchReviewsForBook(Book book, ViewBookUI viewBookUI) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        db.collection("Reviews")
-                .document(book.getTitle())
-                .collection("UserReviews")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Review> reviews = new ArrayList<>();
-                    for (DocumentSnapshot document : queryDocumentSnapshots) {
-                        // Use QueryDocumentSnapshot for easier access to data
-                        QueryDocumentSnapshot doc = (QueryDocumentSnapshot) document;
-                        String username = doc.getString("username");
-                        // Handle potential null for rating (Firestore might store as Long or Double)
-                        Number ratingNumber = doc.getDouble("rating");
-                        float rating = ratingNumber != null ? ratingNumber.floatValue() : 0f;
-                        String comment  = doc.getString("comment");
-                        String reviewId = doc.getId();
-                        String bookId   = doc.getReference()
-                                .getParent()
-                                .getParent()
-                                .getId();
-                        String authorUid = doc.getString("authorUid"); // <--- Fetch authorUid
-
-                        // Use the new constructor that includes authorUid
-                        reviews.add(new Review(username,
-                                rating,
-                                comment,
-                                reviewId,
-                                bookId,
-                                doc.getString("thumbnailUrl"), // Assuming thumbnail URL is stored in the review document
-                                authorUid)); // <--- Pass authorUid
-                    }
-                    viewBookUI.displayReviews(reviews); // New method in ViewBookUI to show reviews
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(ControllerActivity.this, "Failed to load reviews: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
 
     @Override
     public void onEditReviewRequested(Book book, Review review, ViewBookUI viewUI) {
+        Log.d(TAG, "Edit review requested for review ID: " + review.getReviewId());
         reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
             @Override
             public void onReviewUpdated() {
-                // After update, re-fetch reviews to refresh the list
-                fetchReviewsForBook(book, viewUI);
+                Log.d(TAG, "Review updated successfully via ReviewManager.");
+                if (viewUI != null) {
+                    fetchReviews(book, viewUI);
+                }
+                Toast.makeText(ControllerActivity.this, "Review updated!", Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onReviewUpdateFailed(Exception e) {
-                Toast.makeText(ControllerActivity.this,
-                        "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Review update failed via ReviewManager", e);
+                Toast.makeText(ControllerActivity.this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     @Override
     public void onDeleteReviewRequested(Book book, Review review, ViewBookUI viewUI) {
+        Log.d(TAG, "Delete review requested for review ID: " + review.getReviewId());
         reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
             @Override
             public void onReviewDeleted() {
-                // After deletion, re-fetch reviews to refresh the list
-                fetchReviewsForBook(book, viewUI);
+                Log.d(TAG, "Review deleted successfully via ReviewManager.");
+                if (viewUI != null) {
+                    fetchReviews(book, viewUI);
+                }
+                Toast.makeText(ControllerActivity.this, "Review deleted!", Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onReviewDeleteFailed(Exception e) {
-                Toast.makeText(ControllerActivity.this,
-                        "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Review delete failed via ReviewManager", e);
+                Toast.makeText(ControllerActivity.this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
     public void fetchUserReviews(String username, ViewProfileUI ui) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collectionGroup("UserReviews")
-                .whereEqualTo("username", username)
-                .get()
-                .addOnSuccessListener(snapshots -> {
-                    List<Review> userReviews = new ArrayList<>();
-                    for (DocumentSnapshot document : snapshots) {
-                        // Use QueryDocumentSnapshot for easier access to data
-                        QueryDocumentSnapshot doc = (QueryDocumentSnapshot) document;
-                        String reviewUsername = doc.getString("username"); // Get username from doc
-                        // Handle potential null for rating
-                        Number ratingNumber = doc.getDouble("rating");
-                        float rating  = ratingNumber != null ? ratingNumber.floatValue() : 0f;
-                        String comment  = doc.getString("comment");
-                        String reviewId = doc.getId();
-                        String bookId   = doc.getReference()
-                                .getParent()
-                                .getParent()
-                                .getId();
-                        String thumb = doc.getString("thumbnailUrl");
-                        String authorUid = doc.getString("authorUid"); // <--- Fetch authorUid from the document
-
-                        // Use the new constructor that includes authorUid
-                        userReviews.add(new Review(reviewUsername, // Use username from doc
-                                rating,
-                                comment,
-                                reviewId,
-                                bookId,
-                                thumb,
-                                authorUid)); // <--- Pass authorUid
-                    }
+        Log.d(TAG, "Fetching user reviews for username: " + username);
+        firestoreFacade.fetchUserReviewsByUsername(username, new FirestoreFacade.OnReviewsFetchedListener() {
+            @Override
+            public void onFetched(List<Review> userReviews) {
+                Log.d(TAG, "Fetched " + userReviews.size() + " reviews for user " + username);
+                if (ui != null) {
                     ui.displayUserReviews(userReviews);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("ProfileFetch", "FAILED", e);
-                    Toast.makeText(this, "Error loading user reviews: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
-
+                }
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Failed to load user reviews for " + username + ": " + error);
+                if (ui != null) {
+                    // ui.showError("Error loading user reviews: " + error); // If ViewProfileUI has showError
+                }
+                Toast.makeText(ControllerActivity.this, "Error loading user reviews: " + error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
-
-
     public void onEditUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
-        // Assuming review object already has the updated rating/comment
-        // Assuming ReviewManager.updateReview updates the correct review in Firestore
+        Log.d(TAG, "Edit user review requested for review ID: " + review.getReviewId() + " by user " + currentUsername);
         reviewManager.updateReview(review, new ReviewManager.OnReviewUpdatedListener() {
             @Override
             public void onReviewUpdated() {
-                // After update, re-fetch user reviews to refresh the list on the profile page
-                // Need to get the username from the review object or the UI to refetch
-                // Since we are now using UID for profile fetching, we should ideally refetch by UID.
-                // For now, keeping username based refetch as per existing structure.
-                fetchUserReviews(review.getUsername(), ui);
+                Log.d(TAG, "User review updated successfully by " + currentUsername);
+                if (ui != null) {
+                    fetchUserReviews(review.getUsername(), ui);
+                }
+                Toast.makeText(ControllerActivity.this, "Your review updated!", Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onReviewUpdateFailed(Exception e) {
-                Toast.makeText(ControllerActivity.this,
-                        "Update failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "User review update failed for " + currentUsername, e);
+                Toast.makeText(ControllerActivity.this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
     public void onDeleteUserReviewRequested(String currentUsername, Review review, ViewProfileUI ui) {
-        // Assuming review object has the reviewId needed for deletion
-        // Assuming ReviewManager.deleteReview deletes the correct review from Firestore
+        Log.d(TAG, "Delete user review requested for review ID: " + review.getReviewId() + " by user " + currentUsername);
         reviewManager.deleteReview(review, new ReviewManager.OnReviewDeletedListener() {
             @Override
             public void onReviewDeleted() {
-                // After deletion, re-fetch user reviews to refresh the list on the profile page
-                // Need to get the username from the review object or the UI to refetch
-                // Since we are now using UID for profile fetching, we should ideally refetch by UID.
-                // For now, keeping username based refetch as per existing structure.
-                fetchUserReviews(review.getUsername(), ui);
+                Log.d(TAG, "User review deleted successfully by " + currentUsername);
+                if (ui != null) {
+                    fetchUserReviews(review.getUsername(), ui);
+                }
+                Toast.makeText(ControllerActivity.this, "Your review deleted!", Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onReviewDeleteFailed(Exception e) {
-                Toast.makeText(ControllerActivity.this,
-                        "Delete failed: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "User review delete failed for " + currentUsername, e);
+                Toast.makeText(ControllerActivity.this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
-
     public void fetchSavedBooks(ViewSavedBooksUI ui) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { ui.showError("Not signed in"); return; }
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Log.w(TAG, "fetchSavedBooks: User not signed in.");
+            if (ui != null) ui.showError("Not signed in");
+            return;
+        }
         String uid = user.getUid();
-
-        FirebaseFirestore.getInstance()
-                .collection("Users").document(uid)
-                .collection("SavedBooks")
-                .get()
-                .addOnSuccessListener(snapshots -> {
-                    List<Book> list = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots) {
-                        list.add(doc.toObject(Book.class));
-                    }
-                    ui.displaySavedBooks(list);
-                })
-                .addOnFailureListener(e -> ui.showError(e.getMessage()));
+        Log.d(TAG, "Fetching saved books for UID: " + uid);
+        firestoreFacade.fetchSavedBooks(uid, new FirestoreFacade.OnSavedBooksFetchedListener() {
+            @Override
+            public void onFetched(List<Book> books) {
+                Log.d(TAG, "Fetched " + books.size() + " saved books for UID: " + uid);
+                if (ui != null) ui.displaySavedBooks(books);
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error fetching saved books for UID: " + uid, new Exception(error));
+                if (ui != null) ui.showError(error);
+            }
+        });
     }
 
-
+    @Override
     public void saveBook(Book book, ViewBookUI ui) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { ui.onBookSaveError("Not signed in"); return; }
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Log.w(TAG, "saveBook: User not signed in.");
+            if (ui != null) ui.onBookSaveError("Not signed in");
+            return;
+        }
         String uid = user.getUid();
-
-        FirebaseFirestore.getInstance()
-                .collection("Users").document(uid)
-                .collection("SavedBooks").document(book.getTitle())
-                .set(book)
-                .addOnSuccessListener(a -> ui.onBookSaveState(true))
-                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
+        Log.d(TAG, "Saving book: " + book.getTitle() + " for UID: " + uid);
+        // Corrected to use OnBookSaveOpListener
+        firestoreFacade.saveBook(uid, book, new FirestoreFacade.OnBookSaveOpListener() {
+            @Override
+            public void onSuccess(boolean isSaved) {
+                Log.d(TAG, "Book saved successfully: " + book.getTitle() + " for UID: " + uid);
+                if (ui != null) ui.onBookSaveState(true); // isSaved will be true
+                Toast.makeText(ControllerActivity.this, "Book saved!", Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error saving book: " + book.getTitle() + " for UID: " + uid, new Exception(error));
+                if (ui != null) ui.onBookSaveError(error);
+            }
+        });
     }
 
-
+    @Override
     public void removeSavedBook(Book book, ViewBookUI ui) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { ui.onBookSaveError("Not signed in"); return; }
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Log.w(TAG, "removeSavedBook: User not signed in.");
+            if (ui != null) ui.onBookSaveError("Not signed in");
+            return;
+        }
         String uid = user.getUid();
-
-        FirebaseFirestore.getInstance()
-                .collection("Users").document(uid)
-                .collection("SavedBooks").document(book.getTitle())
-                .delete()
-                .addOnSuccessListener(a -> ui.onBookSaveState(false))
-                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
+        Log.d(TAG, "Removing saved book: " + book.getTitle() + " for UID: " + uid);
+        // Corrected to use OnBookSaveOpListener
+        firestoreFacade.removeSavedBook(uid, book, new FirestoreFacade.OnBookSaveOpListener() {
+            @Override
+            public void onSuccess(boolean isSaved) {
+                Log.d(TAG, "Book removed from saved successfully: " + book.getTitle() + " for UID: " + uid);
+                if (ui != null) ui.onBookSaveState(false); // isSaved will be false
+                Toast.makeText(ControllerActivity.this, "Book removed from saved!", Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error removing saved book: " + book.getTitle() + " for UID: " + uid, new Exception(error));
+                if (ui != null) ui.onBookSaveError(error);
+            }
+        });
     }
 
-
+    @Override
     public void isBookSaved(Book book, ViewBookUI ui) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { ui.onBookSaveState(false); return; }
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Log.w(TAG, "isBookSaved: User not signed in. Reporting book as not saved.");
+            if (ui != null) ui.onBookSaveState(false);
+            return;
+        }
         String uid = user.getUid();
-
-        FirebaseFirestore.getInstance()
-                .collection("Users").document(uid)
-                .collection("SavedBooks").document(book.getTitle())
-                .get()
-                .addOnSuccessListener(doc -> ui.onBookSaveState(doc.exists()))
-                .addOnFailureListener(e -> ui.onBookSaveError(e.getMessage()));
+        Log.d(TAG, "Checking if book is saved: " + book.getTitle() + " for UID: " + uid);
+        // Using Consumer<Boolean> as expected by FirestoreFacade.isBookSaved
+        firestoreFacade.isBookSaved(uid, book, isSaved -> {
+            Log.d(TAG, "Book " + book.getTitle() + (isSaved ? " is saved." : " is not saved.") + " for UID: " + uid);
+            if (ui != null) {
+                ui.onBookSaveState(isSaved);
+                // Note: The facade's isBookSaved(Consumer<Boolean>) doesn't directly provide an error message string here.
+                // Errors are logged in the facade and result in 'isSaved' being false.
+                // If a distinct error message is needed in the UI for this check,
+                // FirestoreFacade.isBookSaved would need a listener with an onError callback.
+            }
+        });
     }
 
-
-
-    // A) Search users by prefix
     public void searchUsers(String query, ViewSearchUsersUI ui) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("Users")
-                .orderBy("username")
-                .startAt(query)
-                .endAt(query + "\uf8ff")
-                .get()
-                .addOnSuccessListener(snapshots -> {
-                    List<User> list = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots) {
-                        User u = doc.toObject(User.class);
-                        if (u != null) { // Add null check
-                            u.setId(doc.getId()); // Make sure User model has setId
-                            list.add(u);
-                        }
-                    }
-                    ui.displaySearchResults(list);
-                })
-                .addOnFailureListener(e -> ui.showSearchError(e.getMessage()));
+        Log.d(TAG, "Searching users with query: " + query);
+        firestoreFacade.searchUsers(query, new FirestoreFacade.OnUserSearchListener() {
+            @Override
+            public void onResults(List<User> users) {
+                Log.d(TAG, "Found " + users.size() + " users for query: " + query);
+                if (ui != null) ui.displaySearchResults(users);
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error searching users with query: " + query, new Exception(error));
+                if (ui != null) ui.showSearchError(error);
+            }
+        });
     }
 
-    // Interface for fetching user profile
-    public interface OnUserProfileFetchedListener {
-        void onFetched(User user);
-        void onError(String error);
+    public void fetchUserProfile(String userId, FirestoreFacade.OnUserProfileFetchedListener listener) {
+        Log.d(TAG, "Fetching user profile for UID: " + userId);
+        firestoreFacade.fetchUserProfile(userId, listener);
     }
 
-    /**
-     * Fetches a user's profile details from Firestore based on their User ID.
-     *
-     * @param userId The ID of the user whose profile to fetch.
-     * @param listener The listener to handle the fetch result.
-     */
-    public void fetchUserProfile(String userId, OnUserProfileFetchedListener listener) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("Users").document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        if (user != null) {
-                            user.setId(documentSnapshot.getId()); // Set the ID from the document
-                            listener.onFetched(user);
-                        } else {
-                            listener.onError("Failed to parse user data.");
-                        }
-                    } else {
-                        listener.onFetched(null); // User document not found
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("ControllerActivity", "Error fetching user profile", e);
-                    listener.onError(e.getMessage());
-                });
+    public void fetchFollowingCount(String userId, FirestoreFacade.OnCountFetchedListener listener) {
+        Log.d(TAG, "Fetching following count for UID: " + userId);
+        firestoreFacade.fetchFollowingCount(userId, listener);
     }
 
-
-    // Interface for callbacks
-    public interface OnCountFetchedListener {
-        void onCount(int count);
-        void onError(String err);
+    public void fetchFollowersCount(String username, FirestoreFacade.OnCountFetchedListener listener) {
+        Log.d(TAG, "Fetching followers count for username: " + username);
+        firestoreFacade.fetchFollowersCount(username, listener);
     }
 
-    /**
-     * How many users this person is following?
-     */
-    public void fetchFollowingCount(String userId, OnCountFetchedListener listener) {
-        FirebaseFirestore.getInstance()
-                .collection("Users")
-                .document(userId)
-                .collection("Follow")
-                .get()
-                .addOnSuccessListener(qs -> listener.onCount(qs.size()))
-                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    public void follow(String followedUsername, Runnable onSuccess, Consumer<String> onError) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Log.w(TAG, "Follow action: User not logged in.");
+            onError.accept("User not logged in.");
+            return;
+        }
+        String myId = currentUser.getUid();
+        Log.d(TAG, "User UID: " + myId + " attempting to follow username: " + followedUsername);
+        firestoreFacade.followUser(myId, followedUsername, onSuccess, onError);
     }
 
-    /**
-     * How many followers does this username have?
-     */
-    public void fetchFollowersCount(String username, OnCountFetchedListener listener) {
-        FirebaseFirestore.getInstance()
-                .collectionGroup("Follow")
-                .whereEqualTo("followed", username)
-                .get()
-                .addOnSuccessListener(qs -> listener.onCount(qs.size()))
-                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    public void unfollow(String followedUsername, Runnable onSuccess, Consumer<String> onError) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Log.w(TAG, "Unfollow action: User not logged in.");
+            onError.accept("User not logged in.");
+            return;
+        }
+        String myId = currentUser.getUid();
+        Log.d(TAG, "User UID: " + myId + " attempting to unfollow username: " + followedUsername);
+        firestoreFacade.unfollowUser(myId, followedUsername, onSuccess, onError);
     }
 
-    /**
-     * Follow a user by writing under Users/{myId}/Follow/{followedUsername}
-     */
-    public void follow(String myId,
-                       String followedUsername,
-                       Runnable onSuccess,
-                       Consumer<String> onError) {
-        Map<String,Object> data = new HashMap<>();
-        data.put("followed", followedUsername);
-        data.put("timestamp", System.currentTimeMillis());
-
-        FirebaseFirestore.getInstance()
-                .collection("Users")
-                .document(myId)
-                .collection("Follow")
-                .document(followedUsername)
-                .set(data)
-                .addOnSuccessListener(a -> onSuccess.run())
-                .addOnFailureListener(e -> onError.accept(e.getMessage()));
-    }
-
-    /**
-     * Unfollow by deleting that same doc
-     */
-    public void unfollow(String myId,
-                         String followedUsername,
-                         Runnable onSuccess,
-                         Consumer<String> onError) {
-        FirebaseFirestore.getInstance()
-                .collection("Users")
-                .document(myId)
-                .collection("Follow")
-                .document(followedUsername)
-                .delete()
-                .addOnSuccessListener(a -> onSuccess.run())
-                .addOnFailureListener(e -> onError.accept(e.getMessage()));
-    }
-
-    /** Callback for fetching entire “following” list */
-    public interface OnFollowedListFetchedListener {
-        void onFetched(List<String> usernames);
-        void onError(String err);
-    }
-
-    /**
-     * Fetches the usernames of users that the current user is following.
-     * @param userId The UID of the current user.
-     * @param listener The listener to handle the fetch result.
-     */
-    public void fetchFollowingUsernames(String userId, OnFollowedListFetchedListener listener) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // Correctly access the 'Follow' subcollection under the user's document
-        db.collection("Users")           // Collection
-                .document(userId)          // Document (User's UID)
-                .collection("Follow")          // Subcollection
-                .get() // Get all documents in the 'Follow' subcollection
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<String> followingUsernames = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        // Each document in the 'Follow' subcollection represents a followed user.
-                        // We store the followed username in a field (assuming named "followed").
-                        String followedUsername = document.getString("followed");
-                        if (followedUsername != null) {
-                            followingUsernames.add(followedUsername);
-                        }
-                    }
-                    listener.onFetched(followingUsernames);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("ControllerActivity", "Error fetching following list", e);
-                    listener.onError(e.getMessage());
-                });
+    public void fetchFollowingUsernames(String userId, FirestoreFacade.OnFollowedListFetchedListener listener) {
+        Log.d(TAG, "Fetching list of followed usernames for UID: " + userId);
+        firestoreFacade.fetchFollowingUsernames(userId, listener);
     }
 }
