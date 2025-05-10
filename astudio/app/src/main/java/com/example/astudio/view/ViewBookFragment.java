@@ -8,40 +8,48 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
-
+// AndroidX imports
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
-
+// Glide for image loading
 import com.bumptech.glide.Glide;
+// Project-specific imports
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
-import com.example.astudio.databinding.FragmentViewBookBinding;
+import com.example.astudio.databinding.FragmentViewBookBinding; // Main fragment binding
+import com.example.astudio.databinding.ItemReviewBinding; // Binding for item_review.xml
 import com.example.astudio.model.Book;
 import com.example.astudio.model.Review;
 import com.example.astudio.view.ViewBookUI.ViewBookListener;
-
+// Firebase Auth
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+// Java utilities
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Fragment that displays detailed information about a selected book, including its title, author,
  * description, rating, and reviews. Users can also submit their reviews via a dialog.
+ * Edit and delete operations for reviews are restricted to the author of the review.
+ * This version uses ViewBinding throughout, including in the RecyclerView ViewHolder.
  */
 public class ViewBookFragment extends Fragment implements ViewBookUI {
 
     private static final String FRAGMENT_TAG = "ViewBookFragment";
-    private FragmentViewBookBinding binding;
+    private FragmentViewBookBinding binding; // ViewBinding for the fragment's layout
     private Book selectedBook;
     private ViewBookListener listener;
     private boolean isDescriptionExpanded = false;
 
-    // Reviews list and adapter.
     private final List<Review> reviewsList = new ArrayList<>();
     private ReviewsAdapter reviewsAdapter;
-    private String currentUsername;
+    private String currentLoggedInUserUid;
+    private String currentLoggedInUsername;
+
     private boolean isSaved = false;
 
     public ViewBookFragment() {
@@ -56,7 +64,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
             Log.d(FRAGMENT_TAG, "Listener (ControllerActivity) attached.");
         } else {
             Log.e(FRAGMENT_TAG, "Host activity must implement ViewBookListener.");
-            throw new IllegalStateException("Host must implement ViewBookListener");
+            throw new IllegalStateException("Host activity must implement ViewBookListener");
         }
     }
 
@@ -64,24 +72,37 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        // Inflate the layout for this fragment using ViewBinding
         binding = FragmentViewBookBinding.inflate(inflater, container, false);
-        Log.d(FRAGMENT_TAG, "onCreateView called.");
+        Log.d(FRAGMENT_TAG, "onCreateView called and binding inflated.");
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            currentLoggedInUserUid = currentUser.getUid();
+            currentLoggedInUsername = currentUser.getDisplayName();
+            if (currentLoggedInUsername == null || currentLoggedInUsername.isEmpty()) {
+                Log.w(FRAGMENT_TAG, "Logged in user's display name is null or empty. Consider fetching from Firestore profile.");
+                // If display name is crucial for new reviews, you might fetch it here or rely on controller.
+                // For now, the controller handles definitive username setting on submission.
+            }
+            Log.d(FRAGMENT_TAG, "Current logged-in user UID: " + currentLoggedInUserUid);
+        } else {
+            Log.w(FRAGMENT_TAG, "No user logged in.");
+            currentLoggedInUserUid = null;
+            currentLoggedInUsername = "Anonymous"; // Default for posting if not logged in
+        }
 
         if (getArguments() != null) {
             selectedBook = (Book) getArguments().getSerializable("book");
             if (selectedBook != null) {
                 Log.d(FRAGMENT_TAG, "Selected book retrieved: " + selectedBook.getTitle());
             } else {
-                Log.e(FRAGMENT_TAG, "Selected book is NULL.");
-            }
-            if (getArguments().containsKey("username")) {
-                currentUsername = getArguments().getString("username");
-                Log.d(FRAGMENT_TAG, "Current username from args: " + currentUsername);
+                Log.e(FRAGMENT_TAG, "Selected book is NULL from arguments.");
             }
         } else {
-            Log.e(FRAGMENT_TAG, "getArguments() is null.");
+            Log.e(FRAGMENT_TAG, "getArguments() is null. Cannot retrieve selected book.");
         }
-        return binding.getRoot();
+        return binding.getRoot(); // Return the root view from the binding
     }
 
     @Override
@@ -92,54 +113,62 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         if (selectedBook != null) {
             updateBookDetails(selectedBook);
         } else {
-            Log.e(FRAGMENT_TAG, "selectedBook is null.");
+            Log.e(FRAGMENT_TAG, "selectedBook is null in onViewCreated. Cannot display details.");
             Toast.makeText(getContext(), "Error: Book data not found.", Toast.LENGTH_LONG).show();
+            return; // Early exit if no book data
         }
 
         // Initialize adapter and RecyclerView
         reviewsAdapter = new ReviewsAdapter(reviewsList, new ReviewActionListener() {
             @Override
             public void onEditReview(Review review, int pos) {
-                EditReviewDialogFragment dlg = EditReviewDialogFragment.newInstance(review);
-                dlg.setOnReviewEditedListener((newRating, newComment) -> {
-                    review.setRating(newRating);
-                    review.setComment(newComment);
-                    if (listener != null) {
-                        listener.onEditReviewRequested(selectedBook, review, ViewBookFragment.this);
-                    }
-                });
-                dlg.show(getChildFragmentManager(), "EditReviewDialog");
+                if (currentLoggedInUserUid != null && review.getAuthorUid() != null && review.getAuthorUid().equals(currentLoggedInUserUid)) {
+                    EditReviewDialogFragment dlg = EditReviewDialogFragment.newInstance(review);
+                    dlg.setOnReviewEditedListener((newRating, newComment) -> {
+                        review.setRating(newRating);
+                        review.setComment(newComment);
+                        if (listener != null && selectedBook != null) {
+                            listener.onEditReviewRequested(selectedBook, review, ViewBookFragment.this);
+                        }
+                    });
+                    dlg.show(getChildFragmentManager(), "EditReviewDialog");
+                } else {
+                    Toast.makeText(getContext(), "You can only edit your own reviews.", Toast.LENGTH_SHORT).show();
+                    Log.w(FRAGMENT_TAG, "Attempt to edit review not authored by current user.");
+                }
             }
 
             @Override
             public void onDeleteReview(Review review, int pos) {
-                new AlertDialog.Builder(requireContext())
-                        .setMessage(R.string.confirm_delete_review)
-                        .setPositiveButton(android.R.string.yes, (d, w) -> {
-                            if (listener != null) {
-                                listener.onDeleteReviewRequested(selectedBook, review, ViewBookFragment.this);
-                            }
-                        })
-                        .setNegativeButton(android.R.string.no, null)
-                        .show();
+                if (currentLoggedInUserUid != null && review.getAuthorUid() != null && review.getAuthorUid().equals(currentLoggedInUserUid)) {
+                    new AlertDialog.Builder(requireContext())
+                            .setTitle("Confirm Delete")
+                            .setMessage(R.string.confirm_delete_review)
+                            .setPositiveButton(android.R.string.yes, (d, w) -> {
+                                if (listener != null && selectedBook != null) {
+                                    listener.onDeleteReviewRequested(selectedBook, review, ViewBookFragment.this);
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, null)
+                            .show();
+                } else {
+                    Toast.makeText(getContext(), "You can only delete your own reviews.", Toast.LENGTH_SHORT).show();
+                    Log.w(FRAGMENT_TAG, "Attempt to delete review not authored by current user.");
+                }
             }
-        });
+        }, currentLoggedInUserUid);
+
         binding.reviewsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.reviewsRecycler.setAdapter(reviewsAdapter);
         Log.d(FRAGMENT_TAG, "RecyclerView and Adapter initialized.");
 
-        // Now request reviews
         if (listener != null && selectedBook != null) {
             Log.i(FRAGMENT_TAG, "Requesting reviews for: " + selectedBook.getTitle());
             listener.fetchReviews(selectedBook, this);
-        }
-
-        binding.postReviewButton.setOnClickListener(v -> openPostReviewDialog());
-
-        if (listener != null && selectedBook != null) {
             listener.isBookSaved(selectedBook, this);
         }
 
+        binding.postReviewButton.setOnClickListener(v -> openPostReviewDialog());
         binding.savedBooksButton.setOnClickListener(v -> {
             if (selectedBook == null || listener == null) {
                 Toast.makeText(getContext(), "Error performing action.", Toast.LENGTH_SHORT).show();
@@ -160,37 +189,54 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
         }
         PostReviewDialogFragment dialog = new PostReviewDialogFragment();
         dialog.setOnReviewSubmittedListener((rating, comment) -> {
-            String author = currentUsername != null ? currentUsername : "Anonymous";
+            String authorForNewReviewObject = (currentLoggedInUsername != null && !currentLoggedInUsername.isEmpty()) ? currentLoggedInUsername : "Current User";
             Review newReview = new Review(
-                    author,
+                    authorForNewReviewObject,
                     rating,
                     comment,
                     "",
                     selectedBook.getTitle(),
                     selectedBook.getThumbnailUrl()
             );
-            if (listener != null) listener.onReviewSubmitted(selectedBook, newReview, this);
+            if (listener != null) {
+                listener.onReviewSubmitted(selectedBook, newReview, this);
+            }
         });
         dialog.show(getChildFragmentManager(), "PostReviewDialog");
     }
 
     @Override
     public void postReview(Review review) {
-        reviewsList.add(review);
-        reviewsAdapter.notifyItemInserted(reviewsList.size() - 1);
-        binding.reviewsRecycler.scrollToPosition(reviewsList.size() - 1);
+        if (!isAdded() || binding == null) return;
+        Log.d(FRAGMENT_TAG, "postReview callback: Adding review by " + review.getUsername());
+        reviewsList.add(0, review);
+        reviewsAdapter.notifyItemInserted(0);
+        binding.reviewsRecycler.scrollToPosition(0);
     }
 
     @Override
     public void displayReviews(List<Review> fetchedReviews) {
-        if (!isAdded() || binding == null) return;
+        if (!isAdded() || binding == null) {
+            Log.w(FRAGMENT_TAG, "displayReviews called but fragment not added or binding is null.");
+            return;
+        }
+        Log.i(FRAGMENT_TAG, "displayReviews callback: Received " + (fetchedReviews != null ? fetchedReviews.size() : "null") + " reviews.");
         reviewsList.clear();
-        if (fetchedReviews != null) reviewsList.addAll(fetchedReviews);
+        if (fetchedReviews != null) {
+            reviewsList.addAll(fetchedReviews);
+        }
         reviewsAdapter.notifyDataSetChanged();
+        if (reviewsList.isEmpty()) {
+            Log.d(FRAGMENT_TAG, "No reviews to display for this book.");
+        }
     }
 
     @Override
     public void updateBookDetails(Book book) {
+        if (binding == null || book == null) {
+            Log.e(FRAGMENT_TAG, "updateBookDetails: Binding or book is null.");
+            return;
+        }
         binding.bookTitle.setText(book.getTitle());
         binding.bookAuthor.setText(getString(R.string.book_author, book.getAuthor()));
         binding.bookDescription.setText(book.getDescription());
@@ -220,6 +266,7 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
 
     @Override
     public void onBookSaveState(boolean saved) {
+        if (!isAdded() || binding == null) return;
         this.isSaved = saved;
         binding.savedBooksButton.setBackgroundTintList(
                 ColorStateList.valueOf(
@@ -241,71 +288,85 @@ public class ViewBookFragment extends Fragment implements ViewBookUI {
 
     @Override
     public void onBookSaveError(String message) {
+        if (!isAdded()) return;
         Toast.makeText(getContext(), "Save error: " + message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
+        Log.d(FRAGMENT_TAG, "onDestroyView called.");
+        binding = null; // Release binding
     }
 
     // Inner adapter
     static class ReviewsAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ReviewsAdapter.ReviewViewHolder> {
         private final List<Review> reviewList;
         private final ReviewActionListener actionListener;
+        private final String currentLoggedInUserUid;
 
-        ReviewsAdapter(List<Review> list, ReviewActionListener listener) {
+        ReviewsAdapter(List<Review> list, ReviewActionListener listener, String currentLoggedInUserUid) {
             this.reviewList = list;
             this.actionListener = listener;
+            this.currentLoggedInUserUid = currentLoggedInUserUid;
         }
 
         @NonNull
         @Override
         public ReviewViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_review, parent, false);
-            return new ReviewViewHolder(view);
+            // Inflate using ItemReviewBinding
+            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+            ItemReviewBinding itemBinding = ItemReviewBinding.inflate(inflater, parent, false);
+            return new ReviewViewHolder(itemBinding); // Pass the binding to the ViewHolder
         }
 
         @Override
         public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
             Review review = reviewList.get(position);
             holder.bind(review);
-            if (actionListener != null) {
-                holder.editButton.setOnClickListener(v -> actionListener.onEditReview(review, position));
-                holder.deleteButton.setOnClickListener(v -> actionListener.onDeleteReview(review, position));
+
+            if (currentLoggedInUserUid != null && review.getAuthorUid() != null && review.getAuthorUid().equals(currentLoggedInUserUid)) {
+                holder.binding.editReviewButton.setVisibility(View.VISIBLE);
+                holder.binding.deleteReviewButton.setVisibility(View.VISIBLE);
+
+                if (actionListener != null) {
+                    holder.binding.editReviewButton.setOnClickListener(v -> actionListener.onEditReview(review, holder.getAdapterPosition()));
+                    holder.binding.deleteReviewButton.setOnClickListener(v -> actionListener.onDeleteReview(review, holder.getAdapterPosition()));
+                } else {
+                    holder.binding.editReviewButton.setVisibility(View.GONE);
+                    holder.binding.deleteReviewButton.setVisibility(View.GONE);
+                }
             } else {
-                holder.editButton.setVisibility(View.GONE);
-                holder.deleteButton.setVisibility(View.GONE);
+                holder.binding.editReviewButton.setVisibility(View.GONE);
+                holder.binding.deleteReviewButton.setVisibility(View.GONE);
             }
         }
 
         @Override
         public int getItemCount() {
-            return reviewList.size();
+            return reviewList != null ? reviewList.size() : 0;
         }
 
+        // ViewHolder now uses ItemReviewBinding
         static class ReviewViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder {
-            private final android.widget.TextView usernameText;
-            private final android.widget.RatingBar ratingBar;
-            private final android.widget.TextView commentText;
-            final android.widget.ImageButton editButton;
-            final android.widget.ImageButton deleteButton;
+            private final ItemReviewBinding binding; // Store the binding
 
-            ReviewViewHolder(@NonNull View itemView) {
-                super(itemView);
-                usernameText = itemView.findViewById(R.id.review_username);
-                ratingBar = itemView.findViewById(R.id.review_rating);
-                commentText = itemView.findViewById(R.id.review_comment);
-                editButton = itemView.findViewById(R.id.editReviewButton);
-                deleteButton = itemView.findViewById(R.id.deleteReviewButton);
+            ReviewViewHolder(@NonNull ItemReviewBinding itemBinding) { // Constructor accepts ItemReviewBinding
+                super(itemBinding.getRoot());
+                this.binding = itemBinding; // Assign it
             }
 
             void bind(Review review) {
-                usernameText.setText(review.getUsername());
-                commentText.setText(review.getComment());
-                ratingBar.setRating(review.getRating());
+                if (review != null) {
+                    // Access views via the binding object
+                    binding.reviewUsername.setText(review.getUsername());
+                    binding.reviewComment.setText(review.getComment());
+                    binding.reviewRating.setRating(review.getRating());
+                } else {
+                    binding.reviewUsername.setText("");
+                    binding.reviewComment.setText("");
+                    binding.reviewRating.setRating(0);
+                }
             }
         }
     }
