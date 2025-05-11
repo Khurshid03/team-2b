@@ -12,7 +12,7 @@
 - The user must be logged into the application.
 - The user is browsing books (e.g., on a book detail page, search-for-books bar)
 
-## 3. Postconditions
+## 3. Post conditions
 ### **Successful Completion**:
 1. If the user clicks **Save to Wishlist**, the book is added to their "wishlist" and the button text/icon updates to **Remove from Wishlist**.
 2. If the user clicks **Remove from Wishlist**, the book is removed from their "wishlist," and the button text/icon updates back to **Save to Wishlist**.
@@ -23,7 +23,7 @@
 
 ## 4. Workflow
 The following workflow illustrates the process:
-``` plantuml
+```plantuml
 @startuml
 
 skin rose
@@ -64,4 +64,39 @@ endif
 
 :View the saved books;
 stop
+@enduml
 ```
+
+## Sequence Diagram 
+
+````plantuml
+@startuml
+skin rose
+
+actor User
+participant ViewBookFragment
+participant ControllerActivity
+participant FirestoreFacade
+
+'--- Save Book Flow ---
+User -> ViewBookFragment      : click Save button
+ViewBookFragment -> ControllerActivity : saveBook(selectedBook, this)
+activate ControllerActivity
+
+ControllerActivity -> FirestoreFacade : saveBook(uid, selectedBook, listener)
+activate FirestoreFacade
+
+FirestoreFacade --> ControllerActivity : onSuccess(true)
+deactivate FirestoreFacade
+
+ControllerActivity --> ViewBookFragment : onBookSaveState(true)
+deactivate ControllerActivity
+
+ViewBookFragment -> ViewBookFragment : update Save button UI to “Saved”
+@enduml
+````
+
+
+
+
+

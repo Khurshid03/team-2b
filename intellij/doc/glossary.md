@@ -9,7 +9,7 @@ or like a review).
 
 ---
 
-### **2. Wishlist**
+### **2. Save a book (Wishlist)**
 A personalized list where users can save books they are
 interested in reading or reviewing later. Users can toggle
 books in and out of their wishlist using a "Save to Wishlist"

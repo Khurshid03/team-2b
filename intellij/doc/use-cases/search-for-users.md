@@ -66,3 +66,45 @@ stop
 
 @enduml
 ``````
+
+## Sequence Diagram 
+
+```plantuml
+@startuml
+skin rose
+
+actor User
+participant MainUI
+participant SearchUsersFragment
+participant ControllerActivity
+participant FirestoreFacade
+participant SearchUsersAdapter
+
+'--- Navigation to Search Users ---
+User -> MainUI                        : tap “Search Users” nav item
+MainUI -> SearchUsersFragment         : displayFragment(SearchUsersFragment)
+
+'--- Enter Query & Execute Search ---
+User -> SearchUsersFragment           : enter query\nclick Go
+SearchUsersFragment -> ControllerActivity : searchUsers(query, this)
+activate ControllerActivity
+
+ControllerActivity -> FirestoreFacade : searchUsers(query, listener)
+activate FirestoreFacade
+
+FirestoreFacade --> ControllerActivity : onResults(List<User>)
+deactivate FirestoreFacade
+
+ControllerActivity --> SearchUsersFragment : displaySearchResults(users)
+deactivate ControllerActivity
+activate SearchUsersFragment
+
+SearchUsersFragment -> SearchUsersAdapter : setData(users)
+activate SearchUsersAdapter
+SearchUsersAdapter --> SearchUsersFragment : notifyDataSetChanged()
+deactivate SearchUsersAdapter
+
+SearchUsersFragment --> User           : show updated list
+deactivate SearchUsersFragment
+@enduml
+```

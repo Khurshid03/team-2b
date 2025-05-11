@@ -159,8 +159,8 @@ to a social and persistent experience by introducing follow/like interactions, w
 ---
 ## Expected Results
 By the end of Iteration 4, LitLore users will be able to:
-- Follow friends, like reviews, and browse a live social feed.
-- View enriched profiles complete with avatars, stats.
+- Follow/unfollow friends, and browse a live social feed.
+- View enriched profiles complete with user's reviews.
 - Edit or remove their existing reviews.
 - Search the entire LitLore catalog of books and community of readers.
 - Keep a wishlist and reading status shelves.

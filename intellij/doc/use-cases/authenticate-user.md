@@ -92,30 +92,19 @@ stop
 
 ```plantuml
 @startuml
-
-skin rose 
-
+skin rose
 actor User
-participant Main
-participant UI
 participant LoginFragment
-participant UserModel as "User"
+participant ControllerActivity
+participant FirebaseAuth
+participant BrowseBooksFragment
+participant MainUI
 
-Main -> UI : create
-Main -> LoginFragment : create\n(set UI listener)
-
-UI -> LoginFragment : onStartReview()
-LoginFragment -> UI : promptUsername()
-User -> UI : enters username
-
-LoginFragment -> UI : promptEmail()
-User -> UI : enters email
-
-UI -> LoginFragment : return username + email
-LoginFragment -> UserModel : new User(username, email)
-UserModel --> LoginFragment : User object
-LoginFragment -> UI : showMessage("Welcome to LitLore, username!")
-
+User -> LoginFragment : enter email & password\nclick LoginButton
+LoginFragment -> ControllerActivity : onLogin(email, password, this)
+ControllerActivity -> FirebaseAuth : signInWithEmailAndPassword(email, password)
+FirebaseAuth --> ControllerActivity : onCompleteListener(task)
+ControllerActivity -> BrowseBooksFragment : new BrowseBooksFragment()\nsetListener(this)
+ControllerActivity -> MainUI : displayFragment(browseBooksFragment)
 @enduml
-
 ```

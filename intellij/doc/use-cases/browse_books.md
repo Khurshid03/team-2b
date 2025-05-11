@@ -54,30 +54,60 @@ stop
 @enduml
 ```
 
-## Sequence Diagram
+## Sequence Diagram for Hot books
 
 ```plantuml
 @startuml
 skin rose
 actor User
-participant Main
-participant UI
 participant BrowseBooksFragment
-participant Book
+participant ControllerActivity
+participant GoogleApiFacade
+participant HotBookAdapter
 
-Main -> UI : create
-Main -> BrowseBooksFragment : create\n(set UI listener)
-UI -> BrowseBooksFragment : onLogin()
+User -> BrowseBooksFragment     : onViewCreated()
+BrowseBooksFragment -> ControllerActivity : fetchTopRatedBooks(this)
+activate ControllerActivity
 
-BrowseBooksFragment -> Book : getAvailableGenres()
-BrowseBooksFragment -> Book : getTopRatedBooks()
+ControllerActivity -> GoogleApiFacade      : fetchTopRatedBooks(maxResults=10)
+activate GoogleApiFacade
 
-Book --> BrowseBooksFragment : List of genres
-Book --> BrowseBooksFragment : List of top-rated books
+GoogleApiFacade --> ControllerActivity     : List<Book>
+deactivate GoogleApiFacade
 
-BrowseBooksFragment -> UI : showBrowseBooksPage()
+ControllerActivity --> BrowseBooksFragment : updateHotBooks(books)
+deactivate ControllerActivity
 
+BrowseBooksFragment -> HotBookAdapter      : updateData(books)
 @enduml
+```
 
+## Sequence Diagram: Genre Books
+
+```plantuml
+@startuml
+skin rose
+
+actor User
+participant BrowseBooksFragment
+participant ControllerActivity
+participant GoogleApiFacade
+participant GenreBookAdapter
+
+User -> BrowseBooksFragment     : onViewCreated()
+BrowseBooksFragment -> ControllerActivity : fetchBooksByGenre("Fiction", this)
+activate ControllerActivity
+
+ControllerActivity -> GoogleApiFacade      : fetchBooksByGenre("Fiction", maxResults=12)
+activate GoogleApiFacade
+
+GoogleApiFacade --> ControllerActivity     : List<Book>
+deactivate GoogleApiFacade
+
+ControllerActivity --> BrowseBooksFragment : updateGenreBooks(books)
+deactivate ControllerActivity
+
+BrowseBooksFragment -> GenreBookAdapter     : updateData(books)
+@enduml
 ```
 
