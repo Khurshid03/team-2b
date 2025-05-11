@@ -1,5 +1,6 @@
 package com.example.astudio.view;
 
+import android.content.Context; // Import Context for onAttach
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,16 +27,38 @@ import java.util.List;
 
 /**
  * Fragment that allows searching for users and following/unfollowing them.
+ * Displays a search input, search results, and follow/unfollow actions.
  */
 public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
 
     private static final String FRAGMENT_TAG = "SearchUsersFragment"; // For logging
+    /** ViewBinding instance for the fragment layout. */
     private FragmentSearchUsersBinding binding;
+    /** Adapter for displaying user search results in the RecyclerView. */
     private SearchUsersAdapter adapter;
+    /** List to hold the current user search results. */
     private final List<User> results = new ArrayList<>();
+    /** Reference to the hosting ControllerActivity. */
     private ControllerActivity controller;
+    /** The unique ID of the currently logged-in user. */
     private String myUid; // Current user's UID
 
+    /**
+     * Required empty public constructor.
+     */
+    public SearchUsersFragment() {
+        // Required empty public constructor
+    }
+
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     * Inflates the layout using ViewBinding.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The View for the fragment's UI, or null.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -45,6 +68,13 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         return binding.getRoot();
     }
 
+    /**
+     * Called immediately after {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} has returned.
+     * Sets up the RecyclerView, adapter, button listeners, and fetches the current user's following list.
+     *
+     * @param view The View returned by {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -145,7 +175,7 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
                 getParentFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragmentContainerView, fragment)
-                        .addToBackStack(null)
+                        .addToBackStack(null) // Add to back stack to allow returning to search results
                         .commit();
             }
         });
@@ -181,6 +211,12 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         });
     }
 
+    /**
+     * Displays the list of user search results in the RecyclerView.
+     * Implements {@link ViewSearchUsersUI#displaySearchResults(List)}.
+     *
+     * @param users The list of {@link User} objects found.
+     */
     @Override
     public void displaySearchResults(List<User> users) {
         results.clear();
@@ -195,12 +231,22 @@ public class SearchUsersFragment extends Fragment implements ViewSearchUsersUI {
         }
     }
 
+    /**
+     * Displays an error message related to a user search operation.
+     * Implements {@link ViewSearchUsersUI#showSearchError(String)}.
+     *
+     * @param message The error message string.
+     */
     @Override
     public void showSearchError(String message) {
         Log.e(FRAGMENT_TAG, "Search error: " + message);
         Toast.makeText(getContext(), "Search error: " + message, Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Called when the view previously created by onCreateView has been detached from the fragment.
+     * Cleans up the binding reference.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

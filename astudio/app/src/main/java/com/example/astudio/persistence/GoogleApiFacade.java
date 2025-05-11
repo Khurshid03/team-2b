@@ -23,7 +23,7 @@ import retrofit2.Response;
 public class GoogleApiFacade {
     private static final String TAG = "GoogleApiFacade";
     // TODO: Consider moving API key to BuildConfig or a secure config file
-    private static final String API_KEY = "API_KEY_HERE"; // Replace with your actual API key
+    private static final String API_KEY = "AIzaSyD4CwbziYN_d65sQeyrk3F616yUHzYDe14";
 
     private final GoogleBooksApi api;
 
@@ -98,7 +98,7 @@ public class GoogleApiFacade {
     }
 
     /**
-     * Convenience for fetching "top rated" fiction.
+     * for fetching "top rated" books(fiction).
      */
     public void fetchTopRatedBooks(int maxResults,
                                    Consumer<List<Book>> onSuccess,

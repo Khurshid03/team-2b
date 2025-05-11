@@ -19,15 +19,23 @@ import com.google.firebase.auth.FirebaseUser;
 
 /**
  * MainUI handles the shared layout with a fragment container and bottom navigation.
- * This version uses ViewBinding to access views from the main.xml layout.
+ * This class manages fragment transactions and bottom navigation visibility.
  */
 public class MainUI {
+    /** The host activity for managing fragments. */
     private final FragmentActivity activity;
+    /** ViewBinding instance for the main layout. */
     private final MainBinding binding; // Declare the binding object
+    /** FragmentManager for performing fragment transactions. */
     private final FragmentManager fragmentManager;
-    // CONTAINER_ID is still used directly for fragment transactions
+    /** The ID of the container View where fragments are displayed. */
     private static final int CONTAINER_ID = R.id.fragmentContainerView;
 
+    /**
+     * Constructs a new MainUI instance.
+     * Initializes ViewBinding, sets up bottom navigation, and loads the home fragment.
+     * @param activity The host FragmentActivity.
+     */
     public MainUI(FragmentActivity activity) {
         this.activity = activity;
         this.fragmentManager = activity.getSupportFragmentManager();
@@ -42,14 +50,17 @@ public class MainUI {
         navigateToHome(false);
     }
 
+    /**
+     * Gets the root view of the main layout.
+     * @return The root View from the binding object.
+     */
     @NonNull
     public View getRootView() {
         return binding.getRoot(); // Return the root view from the binding object
     }
 
     /**
-     * Programmatically display a fragment (e.g. after login)
-     * and manage BottomNavigationView visibility.
+     * Displays a fragment in the main container and manages BottomNavigationView visibility.
      * @param fragment The Fragment to display.
      */
     public void displayFragment(Fragment fragment) {
@@ -64,7 +75,8 @@ public class MainUI {
     }
 
     /**
-     * Set up bottom navigation item selected listener using if-else.
+     * Sets up bottom navigation item selected listener.
+     * Navigates to different fragments based on the selected item.
      */
     private void setupBottomNavigation() {
         // Access bottomNavigationView via the binding object
@@ -88,6 +100,10 @@ public class MainUI {
         });
     }
 
+    /**
+     * Navigates to the Home (Browse Books) fragment.
+     * @param addToBackStack True if this transaction should be added to the back stack.
+     */
     private void navigateToHome(boolean addToBackStack) {
         BrowseBooksFragment browse = new BrowseBooksFragment();
         Bundle args = new Bundle();
@@ -102,42 +118,45 @@ public class MainUI {
         binding.bottomNavigationView.setVisibility(View.VISIBLE); // Ensure nav is visible for home
     }
 
+    /**
+     * Navigates to the User Profile fragment for the current user.
+     * @param addToBackStack True if this transaction should be added to the back stack.
+     */
     private void navigateToProfile(boolean addToBackStack) {
         ViewProfileFragment profile = new ViewProfileFragment();
         Bundle args = new Bundle();
-        // Pass current user's ID to view their own profile by default
-        // The ViewProfileFragment itself handles logic if no ID is passed (defaults to current user)
-        // or if a specific ID is passed (to view another user's profile).
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             args.putString("userId", currentUser.getUid());
         }
-        // args.putString("username", getCurrentUsername()); // Username might not be needed directly here if UID is primary key
         profile.setArguments(args);
         showFragment(profile, addToBackStack);
-        binding.bottomNavigationView.setVisibility(View.VISIBLE); // Ensure nav is visible
-    }
-
-    private void navigateToSavedBooks(boolean addToBackStack) {
-        ViewSavedBooksFragment saved = new ViewSavedBooksFragment();
-        showFragment(saved, addToBackStack);
-        binding.bottomNavigationView.setVisibility(View.VISIBLE); // Ensure nav is visible
-    }
-
-    private void navigateToSearchUsers(boolean addToBackStack) {
-        SearchUsersFragment search = new SearchUsersFragment();
-        // SearchUsersFragment typically doesn't need arguments to start,
-        // but if it did, they'd be set here.
-        // Example:
-        // Bundle args = new Bundle();
-        // args.putString("initialQuery", "some default query");
-        // search.setArguments(args);
-        showFragment(search, addToBackStack);
-        binding.bottomNavigationView.setVisibility(View.VISIBLE); // Ensure nav is visible
+        binding.bottomNavigationView.setVisibility(View.VISIBLE);
     }
 
     /**
-     * Perform the fragment transaction.
+     * Navigates to the Saved Books fragment.
+     * @param addToBackStack True if this transaction should be added to the back stack.
+     */
+    private void navigateToSavedBooks(boolean addToBackStack) {
+        ViewSavedBooksFragment saved = new ViewSavedBooksFragment();
+        showFragment(saved, addToBackStack);
+        binding.bottomNavigationView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Navigates to the Search Users fragment.
+     * @param addToBackStack True if this transaction should be added to the back stack.
+     */
+    private void navigateToSearchUsers(boolean addToBackStack) {
+        SearchUsersFragment search = new SearchUsersFragment();
+        showFragment(search, addToBackStack);
+        binding.bottomNavigationView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Performs the fragment transaction to display a fragment.
+     * Replaces the current fragment in the container.
      * @param fragment The Fragment to show.
      * @param addToBackStack True if this transaction should be added to the back stack.
      */
@@ -145,13 +164,6 @@ public class MainUI {
         FragmentManager.BackStackEntry currentEntry = null;
         if (fragmentManager.getBackStackEntryCount() > 0) {
             currentEntry = fragmentManager.getBackStackEntryAt(fragmentManager.getBackStackEntryCount() - 1);
-        }
-
-        // Avoid adding the same fragment type to the back stack consecutively if not desired
-        // This is a simple check; more complex navigation might require more robust logic
-        if (currentEntry != null && fragment.getClass().getName().equals(currentEntry.getName()) && !addToBackStack) {
-            // If we are not adding to backstack and it's the same fragment, maybe do nothing or pop
-            // For now, let's proceed as the original logic implies replacing.
         }
 
         androidx.fragment.app.FragmentTransaction transaction = fragmentManager.beginTransaction()
@@ -169,9 +181,8 @@ public class MainUI {
     }
 
     /**
-     * Retrieve the signed-in username or empty string.
-     * This relies on your UserManager implementation.
-     * @return Current username or empty string.
+     * Retrieves the signed-in username from UserManager.
+     * @return The current username or an empty string if not available.
      */
     private String getCurrentUsername() {
         // Assuming UserManager.getInstance().getCurrentUser() returns your User model

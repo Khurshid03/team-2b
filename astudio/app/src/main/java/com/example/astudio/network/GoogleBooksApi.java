@@ -5,7 +5,6 @@ import com.example.astudio.model.BookResponse;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
-import com.example.astudio.model.BookResponse;
 
 /**
  * Interface for Google Books API.

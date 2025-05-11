@@ -56,25 +56,17 @@ public class PostReviewDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        // Inflate the layout using ViewBinding
-        // Use requireActivity().getLayoutInflater() or LayoutInflater.from(requireContext())
-        binding = DialogPostReviewBinding.inflate(LayoutInflater.from(requireContext()));
-
-        // Set the custom view for the dialog using the root of the binding
+        binding = DialogPostReviewBinding.inflate(getLayoutInflater());
         builder.setView(binding.getRoot())
                 .setTitle(R.string.post_review_title)
                 .setNegativeButton(R.string.cancel, (dialog, which) -> {
                     // User cancelled the dialog
                     dismiss();
                 });
-        // The positive button ("Submit") is handled by the custom button inside the layout
+
 
         final AlertDialog dialog = builder.create();
 
-        // Set up the click listener for the custom submit button from the binding
-        // It's common to set this up in onShowListener to override default dismiss behavior if needed,
-        // or directly if the button is only for submission and then dismissal.
-        // For this case, direct setup is fine as we manually dismiss.
         binding.dialogSubmitButton.setOnClickListener(v -> {
             // Access views via the binding object
             float rating = binding.dialogRatingBar.getRating();
@@ -93,20 +85,11 @@ public class PostReviewDialogFragment extends DialogFragment {
                 binding.dialogComment.requestFocus();
                 return; // Keep dialog open
             }
-
-            // All good, pass back to listener
             if (listener != null) {
                 listener.onReviewSubmitted(rating, comment);
             }
-            dialog.dismiss(); // Dismiss the dialog after successful submission
+            dialog.dismiss();
         });
-
-
-        // If you don't want the dialog to automatically dismiss on positive/negative button clicks
-        // (which is not the case here since we are using a custom button for submit),
-        // you would typically set the positive/negative buttons to null in the builder
-        // and handle them entirely with custom button listeners.
-        // Here, setNegativeButton is fine as it just dismisses.
 
         return dialog;
     }
@@ -119,10 +102,6 @@ public class PostReviewDialogFragment extends DialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Nullify the binding object when the view is destroyed
-        // This is important to prevent memory leaks, especially with DialogFragments.
-        // Even though we use onCreateDialog, the view hierarchy is still managed,
-        // and onDestroyView is called when the dialog is dismissed and its view is destroyed.
         binding = null;
     }
 }

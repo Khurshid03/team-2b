@@ -1,7 +1,6 @@
 package com.example.astudio.view;
 
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 // ImageView, TextView, RatingBar imports are no longer needed as views are accessed via binding
 // import android.widget.ImageView;
@@ -43,13 +42,6 @@ public class SavedBooksAdapter extends RecyclerView.Adapter<SavedBooksAdapter.Vi
         this.savedBooks = (savedBooks != null) ? savedBooks : new ArrayList<>(); // Defensive copy or handle null
         this.clickListener = listener;
     }
-
-    // Overloaded constructor if listener is optional or set later (though less common for item clicks)
-    // public SavedBooksAdapter(List<Book> savedBooks) {
-    //    this.savedBooks = (savedBooks != null) ? savedBooks : new ArrayList<>();
-    //    this.clickListener = null; // Or handle appropriately
-    // }
-
 
     @NonNull
     @Override

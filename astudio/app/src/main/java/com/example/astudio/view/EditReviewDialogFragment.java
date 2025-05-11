@@ -3,11 +3,6 @@ package com.example.astudio.view;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-// Import View if still needed for other purposes, though not for accessing views directly
-// import android.view.View;
-// EditText and RatingBar imports are no longer needed if accessed only via binding
-// import android.widget.EditText;
-// import android.widget.RatingBar;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -17,22 +12,33 @@ import com.example.astudio.R;
 import com.example.astudio.databinding.FragmentEditReviewDialogBinding; // Import the generated binding class
 import com.example.astudio.model.Review;
 
+/**
+ * A DialogFragment for editing an existing book review.
+ * Displays the current rating and comment and allows the user to modify them.
+ */
 public class EditReviewDialogFragment extends DialogFragment {
 
-    // Listener interface for when a review is edited and submitted.
+    /**
+     * Listener interface for when a review is edited and submitted.
+     */
     public interface OnReviewEditedListener {
+        /**
+         * Called when the user confirms the edited review.
+         * @param newRating The new rating entered by the user.
+         * @param newComment The new comment entered by the user.
+         */
         void onReviewEdited(float newRating, String newComment);
     }
 
     private static final String ARG_REVIEW = "arg_review"; // Argument key for the original review
-    private OnReviewEditedListener listener; // Listener to communicate back to the calling fragment/activity
-    private Review originalReview; // The review object being edited
+    private OnReviewEditedListener listener;
+    private Review originalReview;
 
-    // ViewBinding instance for the dialog's layout
     private FragmentEditReviewDialogBinding binding;
 
     /**
      * Factory method to create a new instance of this fragment and pass the Review object.
+     *
      * @param review The Review object to be edited.
      * @return A new instance of EditReviewDialogFragment.
      */
@@ -46,12 +52,19 @@ public class EditReviewDialogFragment extends DialogFragment {
 
     /**
      * Sets the listener that will be notified when the review is edited.
+     *
      * @param l The listener object.
      */
     public void setOnReviewEditedListener(OnReviewEditedListener l) {
         this.listener = l;
     }
 
+    /**
+     * Called to do initial creation of the fragment.
+     * Retrieves the original review from arguments.
+     *
+     * @param savedInstanceState If the fragment is being re-created from a previous saved state, this is the state.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,11 +74,17 @@ public class EditReviewDialogFragment extends DialogFragment {
         }
     }
 
+    /**
+     * Override to build your own custom Dialog object.
+     * Creates an AlertDialog with input fields pre-filled with the original review data.
+     *
+     * @param savedState The last saved instance state of the Fragment, or null if this is a freshly created Fragment.
+     * @return A new Dialog instance to be displayed by the Fragment.
+     */
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedState) {
-        // Inflate the custom view for the dialog using ViewBinding
-        // Use requireActivity().getLayoutInflater() or LayoutInflater.from(requireContext())
+
         binding = FragmentEditReviewDialogBinding.inflate(LayoutInflater.from(requireContext()));
 
         // Pre-fill the dialog with the original review values
