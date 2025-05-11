@@ -22,17 +22,14 @@
   
 - **Profile Page**  
   • Shows username, followers, following and posted reviews
-
   • Enables users to view others' profiles and follow/unfollow them as well as read reviews
 
 - **Saved Books Page**  
   • Stores the books user save for later view
-
   • Enables users to easily access their saved books list 
 
 - **Search Users Page**  
   • Returns LitLore users based on search query
-  
   • Enables users to search for others LitLore users and veiw their profile
 
 ---
