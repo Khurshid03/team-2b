@@ -51,25 +51,53 @@ stop
 ```plantuml
 
 @startuml
-
 skin rose
 
 actor User
-participant Main
-participant UI
+participant BrowseBooksFragment
+participant ControllerActivity
+participant MainUI
 participant ViewBookFragment
-participant BookRepository
-participant Book
+participant FirestoreFacade
 
-Main -> UI : create
-Main -> ViewBookFragment : create\n(set CmdLineUI listener)
-UI -> ViewBookFragment : onBookSelected(bookId)
+'--- User selects a book to view ---
+User -> BrowseBooksFragment          : tap on a book item
+BrowseBooksFragment -> ControllerActivity : onBookSelected(book)
+activate ControllerActivity
 
-ViewBookFragment -> BookRepository : getBookById(bookId)
-BookRepository -> ViewBookFragment : return Book
+ControllerActivity -> ViewBookFragment : newInstance(book)
+ControllerActivity -> ViewBookFragment : setListener(this)
+ControllerActivity -> MainUI             : displayFragment(viewBookFragment)
+deactivate ControllerActivity
 
-ViewBookFragment -> UI : displayBookDetail(Book)
-User -> UI : viewDisplayedDetails()
+MainUI -> ViewBookFragment             : fragment transaction (replace container)
+activate ViewBookFragment
 
+'--- Fragment lifecycle and UI setup ---
+ViewBookFragment -> ViewBookFragment   : onCreateView(...)
+ViewBookFragment -> ViewBookFragment   : onViewCreated(...)
+ViewBookFragment -> ViewBookFragment   : updateBookDetails(book)
+
+'--- Load reviews ---
+ViewBookFragment -> ControllerActivity : fetchReviews(book, this)
+activate ControllerActivity
+ControllerActivity -> FirestoreFacade  : fetchReviewsForBook(book, listener)
+activate FirestoreFacade
+FirestoreFacade --> ControllerActivity  : onFetched(List<Review>)
+deactivate FirestoreFacade
+ControllerActivity --> ViewBookFragment : displayReviews(reviews)
+deactivate ControllerActivity
+
+'--- Check saved state ---
+ViewBookFragment -> ControllerActivity : isBookSaved(book, this)
+activate ControllerActivity
+ControllerActivity -> FirestoreFacade  : isBookSaved(uid, book, callback)
+activate FirestoreFacade
+FirestoreFacade --> ControllerActivity  : callback(isSaved)
+deactivate FirestoreFacade
+ControllerActivity --> ViewBookFragment : onBookSaveState(isSaved)
+deactivate ControllerActivity
+
+ViewBookFragment -> ViewBookFragment   : update UI (reviews & save button)
 @enduml
 ```

@@ -126,3 +126,78 @@ stop
 
 @enduml
 ```
+## Sequence Diagram: Edit Review
+
+````plantuml
+@startuml
+skin rose
+actor User
+participant EditReviewDialogFragment
+participant ViewProfileFragment
+participant ControllerActivity
+participant ReviewManager
+participant FirebaseFirestore
+
+User -> ViewProfileFragment         : tap Edit on a review
+ViewProfileFragment -> EditReviewDialogFragment : showDialog(originalReview)
+activate EditReviewDialogFragment
+
+User -> EditReviewDialogFragment     : modify rating/comment\nclick OK
+EditReviewDialogFragment -> ViewProfileFragment : onReviewEdited(newRating, newComment)
+deactivate EditReviewDialogFragment
+activate ViewProfileFragment
+
+ViewProfileFragment -> ControllerActivity : onEditUserReviewRequested(username, review, this)
+activate ControllerActivity
+
+ControllerActivity -> ReviewManager       : updateReview(review, listener)
+activate ReviewManager
+
+ReviewManager -> FirebaseFirestore        : set(review)
+activate FirebaseFirestore
+FirebaseFirestore --> ReviewManager       : onSuccess()
+deactivate FirebaseFirestore
+
+ReviewManager --> ControllerActivity      : listener.onReviewUpdated()
+deactivate ReviewManager
+
+ControllerActivity -> ViewProfileFragment : fetchUserReviews(username, this)
+deactivate ControllerActivity
+
+ViewProfileFragment -> ViewProfileFragment : displayUserReviews(updatedList)
+@enduml
+````
+
+## Sequence Diagram: Delete Review
+
+````plantuml
+@startuml
+skin rose
+actor User
+participant ViewProfileFragment
+participant ControllerActivity
+participant ReviewManager
+participant FirebaseFirestore
+
+
+User -> ViewProfileFragment         : tap Delete on a review
+ViewProfileFragment -> ControllerActivity : onDeleteUserReviewRequested(username, review, this)
+activate ControllerActivity
+
+ControllerActivity -> ReviewManager       : deleteReview(review, listener)
+activate ReviewManager
+
+ReviewManager -> FirebaseFirestore        : delete()
+activate FirebaseFirestore
+FirebaseFirestore --> ReviewManager       : onSuccess()
+deactivate FirebaseFirestore
+
+ReviewManager --> ControllerActivity      : listener.onReviewDeleted()
+deactivate ReviewManager
+
+ControllerActivity -> ViewProfileFragment : fetchUserReviews(username, this)
+deactivate ControllerActivity
+
+ViewProfileFragment -> ViewProfileFragment : displayUserReviews(updatedList)
+@enduml
+````
