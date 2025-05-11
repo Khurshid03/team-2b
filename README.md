@@ -38,11 +38,11 @@
 
 - **Static Categories List**  
   Category names are hard‑coded in the landing page. 
-- However, **book data** comes live from the Google Books API.
+  However, **book data** comes live from the Google Books API.
 
 - **Minimal Input Validation**  
   Only non‑empty checks on login and review text
-- no content moderation or length enforcement.
+  no content moderation or length enforcement.
 
 - **Basic Error Handling**  
   Network errors during API calls show a generic “Failed to load” snackbar.
