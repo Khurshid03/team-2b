@@ -4,8 +4,8 @@
 ## Features Implemented
 
 - **Login Screen**  
-  • Accepts any non‑empty input (username or email) to authenticate a user  
-  • Simple UI with “Login” button and empty‑check validation
+  • Accepts any non‑empty input (username or email) to authenticate a user.  
+  • Simple UI with “Login” button and empty‑check validation.
 
 - **Landing Page**  
   • Displays predefined book categories from GoogleBooksAPI (e.g., History, Science)  
