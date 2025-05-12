@@ -11,17 +11,17 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Before; // Import Before
 
+import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
-import com.example.astudio.view.SearchBooksFragment;
 
 
 @RunWith(AndroidJUnit4.class)
-public class SearchBooksFragmentTest {
+public class SearchUsersFragmentTest {
 
     @Rule
     public ActivityScenarioRule<ControllerActivity> activityRule =
@@ -34,14 +34,15 @@ public class SearchBooksFragmentTest {
     }
 
     /**
-     * Logs in using email/password and then navigates to the SearchBooksFragment.
+     * Logs in using email/password and then navigates to the SearchUsersFragment before each test.
      * This sets up the test environment.
      */
     @Before
-    public void loginAndOpenSearch() throws InterruptedException {
-        // 1) Go to login screen
+    public void setupSearchUsersFragment() throws InterruptedException {
+        // 1) Go to login screen (assuming activity starts on CreateAccountFragment)
         onView(withId(R.id.ProceedToLoginButton)).perform(click());
 
+        // Verify we are on the LoginFragment
         try { Thread.sleep(500); } catch (InterruptedException ignored) {}
         onView(withId(R.id.LoginButton)).check(matches(isDisplayed()));
 
@@ -50,32 +51,30 @@ public class SearchBooksFragmentTest {
         typeTextAndCloseKeyboard(R.id.textPassword, "Felix123");
         onView(withId(R.id.LoginButton)).perform(click());
 
-
         try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
 
         onView(withId(R.id.hot_books_recycler)).check(matches(isDisplayed()));
 
-
-        // 3) Show SearchBooksFragment directly after successful login
-        activityRule.getScenario().onActivity(activity -> {
-            activity.mainUI.displayFragment(SearchBooksFragment.newInstance(""));
-        });
+        // 3) Navigate to Search Users Fragment using the Bottom Navigation View
+        onView(withId(R.id.search_users)).perform(click());
         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
 
-        // Verify we are on the SearchBooksFragment
-        onView(withId(R.id.search_input)).check(matches(isDisplayed())); // Check for a view unique to SearchBooksFragment
+        onView(withId(R.id.search_users_recycler)).check(matches(isDisplayed()));
     }
 
     /**
      * Enters a query, clicks Go, and verifies results RecyclerView is visible.
+     * This test assumes that the search API call will return results.
      */
     @Test
-    public void search_validInput_displaysResults() throws InterruptedException {
-        typeTextAndCloseKeyboard(R.id.search_input, "Kotlin");
+    public void searchUsers_validInput_displaysResults() throws InterruptedException {
+        typeTextAndCloseKeyboard(R.id.search_input, "Tanish");
         onView(withId(R.id.go_button)).perform(click());
+        // Wait for network call and RecyclerView update
         Thread.sleep(5000);
 
-        onView(withId(R.id.search_books_recycler))
+        onView(withId(R.id.search_users_recycler))
                 .check(matches(isDisplayed()));
+
     }
 }

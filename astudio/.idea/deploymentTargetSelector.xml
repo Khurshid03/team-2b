@@ -5,19 +5,19 @@
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="hotBooksRecycler_isVisibleInLayout()">
+      <SelectionState runConfigName="searchUsers_validInput_displaysResults()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="genreBooksRecycler_isVisibleInLayout()">
+      <SelectionState runConfigName="profileUI_elementsAreDisplayed()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="genreButtonsRecycler_isVisibleInLayout()">
+      <SelectionState runConfigName="saveAndUnsaveBook_updatesSavedList()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="search_emptyInput_showsToast()">
+      <SelectionState runConfigName="followUser_changesButtonToFollowing()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="search_validInput_displaysResults()">
+      <SelectionState runConfigName="unfollowUser_changesButtonToFollow()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

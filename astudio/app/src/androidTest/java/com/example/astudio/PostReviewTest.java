@@ -1,4 +1,4 @@
-package com.example.astudio.view;
+package com.example.astudio;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
@@ -23,10 +23,18 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Before;
 
 import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
+import com.example.astudio.view.LoginFragment;
+import com.example.astudio.view.BrowseBooksFragment;
 
+/**
+ * Instrumentation tests for the Post Review flow.
+ * Logs in a user, navigates to a book's details, opens the post-review dialog,
+ * submits a review, and verifies the review appears in the list.
+ */
 @RunWith(AndroidJUnit4.class)
 public class PostReviewTest {
 
@@ -39,7 +47,7 @@ public class PostReviewTest {
      */
     private static void typeTextAndCloseKeyboard(int viewId, String text) {
         onView(withId(viewId))
-            .perform(typeText(text));
+                .perform(typeText(text));
         closeSoftKeyboard();
     }
 
@@ -49,7 +57,11 @@ public class PostReviewTest {
     private static ViewAction setRating(final float rating) {
         return new ViewAction() {
             @Override public Matcher<View> getConstraints() {
-                return org.hamcrest.Matchers.instanceOf(RatingBar.class);
+                // Ensure the view is a RatingBar and is displayed
+                return org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.instanceOf(RatingBar.class),
+                        isDisplayed()
+                );
             }
             @Override public String getDescription() {
                 return "Set rating on RatingBar";
@@ -61,40 +73,65 @@ public class PostReviewTest {
     }
 
     /**
+     * Logs in via the real “Proceed to Login” / Login flow and navigates
+     * to the BrowseBooksFragment. This is a common setup step for tests
+     * that start from the browse screen.
+     */
+    @Before
+    public void setupBrowseFragment() throws InterruptedException {
+        // 1) Go to login screen (assuming activity starts on CreateAccountFragment)
+        onView(withId(R.id.ProceedToLoginButton)).perform(click());
+
+        // Verify we are on the LoginFragment
+        try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+        onView(withId(R.id.LoginButton)).check(matches(isDisplayed()));
+
+        // 2) Enter credentials and tap Login
+        typeTextAndCloseKeyboard(R.id.textEmail, "felix@gmail.com");
+        typeTextAndCloseKeyboard(R.id.textPassword, "Felix123");
+        onView(withId(R.id.LoginButton)).perform(click());
+
+        try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+
+        // Verify we are on the BrowseBooksFragment
+        onView(withId(R.id.hot_books_recycler)).check(matches(isDisplayed()));
+    }
+
+
+    /**
      * Logs in, selects the first hot book, opens the post-review dialog,
      * submits a review, and verifies it appears in the reviews list.
      */
     @Test
     public void postReview_addsReviewToList() {
-        // 1) Log in
-        typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
-        onView(withId(R.id.CreateAccountButton)).perform(click());
 
-        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
-
-        // 2) Click the first book in the hot-books RecyclerView
+        // 3) Click the first book in the hot-books RecyclerView (position 0)
         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
         onView(withId(R.id.hot_books_recycler))
-            .perform(RecyclerViewActions.actionOnItemAtPosition(0, click()));
+                .perform(RecyclerViewActions.actionOnItemAtPosition(0, click()));
 
-        // 3) Open the post review dialog
-        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+
+        // 4) Open the post review dialog
         onView(withId(R.id.post_review_button)).perform(click());
 
-        // 4) In the dialog: set rating and enter comment
+        // 5) In the dialog: set rating and enter comment
         onView(withId(R.id.dialog_rating_bar)).perform(setRating(4.0f));
         onView(withId(R.id.dialog_comment)).perform(typeText("Great read!"));
         closeSoftKeyboard();
 
-        // 5) Submit the review
+        // 6) Submit the review
         try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
         onView(withId(R.id.dialog_submit_button)).perform(click());
 
-        // 6) Scroll the reviews RecyclerView and verify the comment
+        try { Thread.sleep(4000); } catch (InterruptedException ignored) {}
         onView(withId(R.id.reviews_recycler))
-            .perform(RecyclerViewActions.scrollTo(
-                hasDescendant(withText("Great read!"))
-            ));
+                .perform(RecyclerViewActions.scrollTo(
+                        hasDescendant(withText("Great read!"))
+                ));
+
+        // Verify the comment text is displayed after scrolling
         onView(withText("Great read!")).check(matches(isDisplayed()));
+
     }
 }

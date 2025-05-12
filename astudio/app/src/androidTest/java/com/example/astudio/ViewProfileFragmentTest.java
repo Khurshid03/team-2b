@@ -7,21 +7,29 @@ import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
+
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Before;
 
+import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
-import com.example.astudio.view.SearchBooksFragment;
+import com.example.astudio.view.LoginFragment;
+import com.example.astudio.view.BrowseBooksFragment;
+import com.example.astudio.view.ViewProfileFragment;
 
 
 @RunWith(AndroidJUnit4.class)
-public class SearchBooksFragmentTest {
+public class ViewProfileFragmentTest {
 
     @Rule
     public ActivityScenarioRule<ControllerActivity> activityRule =
@@ -34,48 +42,47 @@ public class SearchBooksFragmentTest {
     }
 
     /**
-     * Logs in using email/password and then navigates to the SearchBooksFragment.
+     * Logs in using email/password and then navigates to the ViewProfileFragment before each test.
      * This sets up the test environment.
      */
     @Before
-    public void loginAndOpenSearch() throws InterruptedException {
-        // 1) Go to login screen
+    public void setupViewProfileFragment() throws InterruptedException {
+        /** 1) Go to login screen (assuming activity starts on CreateAccountFragment) */
         onView(withId(R.id.ProceedToLoginButton)).perform(click());
 
+        /** Verify we are on the LoginFragment */
         try { Thread.sleep(500); } catch (InterruptedException ignored) {}
         onView(withId(R.id.LoginButton)).check(matches(isDisplayed()));
 
-        // 2) Enter credentials and tap Login
+        /** 2) Enter credentials and tap Login */
         typeTextAndCloseKeyboard(R.id.textEmail, "felix@gmail.com");
         typeTextAndCloseKeyboard(R.id.textPassword, "Felix123");
         onView(withId(R.id.LoginButton)).perform(click());
 
-
         try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
 
+        /** Verify we are on the BrowseBooksFragment before navigating to Profile */
         onView(withId(R.id.hot_books_recycler)).check(matches(isDisplayed()));
 
+        /** 3) Navigate to Profile Fragment using the Bottom Navigation View*/
+        onView(withId(R.id.nav_profile)).perform(click());
 
-        // 3) Show SearchBooksFragment directly after successful login
-        activityRule.getScenario().onActivity(activity -> {
-            activity.mainUI.displayFragment(SearchBooksFragment.newInstance(""));
-        });
+        /** Wait for fragment transaction to ViewProfileFragment*/
         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
 
-        // Verify we are on the SearchBooksFragment
-        onView(withId(R.id.search_input)).check(matches(isDisplayed())); // Check for a view unique to SearchBooksFragment
+        /** Verify we are on the ViewProfileFragment */
+        onView(withId(R.id.tvUsername)).check(matches(isDisplayed())); // Assuming tvUsername is the ID for the username TextView
     }
 
     /**
-     * Enters a query, clicks Go, and verifies results RecyclerView is visible.
+     * Tests that the username, follower count, following count, and reviews RecyclerView are displayed.
+     * This test assumes the profile data is loaded and displayed successfully after navigation.
      */
     @Test
-    public void search_validInput_displaysResults() throws InterruptedException {
-        typeTextAndCloseKeyboard(R.id.search_input, "Kotlin");
-        onView(withId(R.id.go_button)).perform(click());
-        Thread.sleep(5000);
-
-        onView(withId(R.id.search_books_recycler))
-                .check(matches(isDisplayed()));
+    public void profileUI_elementsAreDisplayed() {
+        onView(withId(R.id.tvUsername)).check(matches(isDisplayed()));
+        onView(withId(R.id.followersButton)).check(matches(isDisplayed()));
+        onView(withId(R.id.followingButton)).check(matches(isDisplayed()));
+        onView(withId(R.id.Reviews)).check(matches(isDisplayed()));
     }
 }
