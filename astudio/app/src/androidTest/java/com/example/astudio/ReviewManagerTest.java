@@ -1,5 +1,5 @@
 /**
- * Unit tests for the ReviewManager class.
+ * Unit tests for the ReviewManager class. (Moved to ReviewManagerTest.java here as suggested)
  *
  * These tests verify that reviews can be posted, updated, and deleted correctly
  * for a given book.
