@@ -79,32 +79,37 @@ stop
 ```plantuml
 @startuml
 skin rose
-
 actor User
-participant ViewBookFragment as VBF
-participant PostReviewDialogFragment as PRDF
-participant Review
-participant ReviewsAdapter as ADA
+participant PostReviewDialogFragment
+participant ViewBookFragment
+participant ControllerActivity
+participant FirestoreFacade
 
+User -> ViewBookFragment           : tap “Post Review”
+ViewBookFragment -> PostReviewDialogFragment : show()
+activate PostReviewDialogFragment
 
-User -> VBF: click postReviewButton
-activate VBF
-VBF -> PRDF: new PostReviewDialogFragment()
-VBF -> PRDF: setOnReviewSubmittedListener(callback)
-VBF -> PRDF: show()
-deactivate VBF
+User -> PostReviewDialogFragment   : enter rating & comment\nclick Submit
+PostReviewDialogFragment -> ViewBookFragment : onReviewSubmitted(rating, comment)
+deactivate PostReviewDialogFragment
+activate ViewBookFragment
 
-User -> PRDF: set rating and comment
-User -> PRDF: click submitButton
-activate PRDF
-PRDF -> VBF: onReviewSubmitted(rating, comment)
-PRDF -> PRDF: dialog.dismiss()
-deactivate PRDF
+ViewBookFragment -> ControllerActivity : onReviewSubmitted(book, reviewData, this)
+activate ControllerActivity
 
-activate VBF
-VBF -> Review: «create» Review(username, rating, comment)
-VBF -> VBF: reviews.add(newReview)
-VBF -> ADA: notifyItemInserted(index)
-deactivate VBF
+ControllerActivity -> FirestoreFacade      : fetchUsernameForUid(uid, callback)
+activate FirestoreFacade
+FirestoreFacade --> ControllerActivity      : username
+deactivate FirestoreFacade
+
+ControllerActivity -> FirestoreFacade      : submitReview(book, reviewWithUsername)
+activate FirestoreFacade
+FirestoreFacade --> ControllerActivity      : documentId
+deactivate FirestoreFacade
+
+ControllerActivity --> ViewBookFragment     : postReview(savedReview)
+deactivate ControllerActivity
+
+ViewBookFragment -> ViewBookFragment       : display new review
 @enduml
 ```

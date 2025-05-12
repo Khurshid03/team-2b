@@ -59,3 +59,55 @@ stop
 
 @enduml
 ``````
+## Sequence Diagram: Follow
+
+```plantuml
+@startuml
+skin rose
+actor User
+participant ViewProfileFragment
+participant ControllerActivity
+participant FirestoreFacade
+
+User -> ViewProfileFragment      : click Follow button
+ViewProfileFragment -> ControllerActivity : follow(profileUsername, onSuccess, onError)
+activate ControllerActivity
+
+ControllerActivity -> FirestoreFacade : followUser(myId, profileUsername, onSuccess, onError)
+activate FirestoreFacade
+
+FirestoreFacade --> ControllerActivity : onSuccess()
+deactivate FirestoreFacade
+
+ControllerActivity --> ViewProfileFragment : Runnable.onSuccess()
+deactivate ControllerActivity
+
+ViewProfileFragment -> ViewProfileFragment : updateFollowButtonUI(true)
+@enduml
+```
+
+## Sequence Diagram: Unfollow
+````plantuml
+@startuml
+skin rose
+actor User
+participant ViewProfileFragment
+participant ControllerActivity
+participant FirestoreFacade
+
+User -> ViewProfileFragment      : click Unfollow button
+ViewProfileFragment -> ControllerActivity : unfollow(profileUsername, onSuccess, onError)
+activate ControllerActivity
+
+ControllerActivity -> FirestoreFacade : unfollowUser(myId, profileUsername, onSuccess, onError)
+activate FirestoreFacade
+
+FirestoreFacade --> ControllerActivity : onSuccess()
+deactivate FirestoreFacade
+
+ControllerActivity --> ViewProfileFragment : Runnable.onSuccess()
+deactivate ControllerActivity
+
+ViewProfileFragment -> ViewProfileFragment : updateFollowButtonUI(false)
+@enduml
+````

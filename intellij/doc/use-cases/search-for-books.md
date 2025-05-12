@@ -74,36 +74,37 @@ stop
 @enduml
 ``````
 # Sequence Diagram
+
 ```plantuml
 @startuml
 
 skin rose
-
 actor User
-participant Main
-participant UI
 participant SearchBooksFragment
-participant BookRepository
+participant ControllerActivity
+participant GoogleApiFacade
+participant SearchBooksAdapter
 
+User -> SearchBooksFragment         : enter query\nclick Go
+SearchBooksFragment -> ControllerActivity : fetchSearchBooks(query, this)
+activate ControllerActivity
 
-Main -> UI : create
-Main -> SearchBooksFragment : create\n(set  listener)
-UI -> SearchBooksFragment : onStartSearch()
+ControllerActivity -> GoogleApiFacade    : searchBooks(query, maxResults,\n onSuccess, onFailure)
+activate GoogleApiFacade
 
-SearchBooksFragment -> UI : promptSearchQuery()
-User -> UI : enters query (title/author/keyword)
-UI -> SearchBooksFragment : return query
+GoogleApiFacade --> ControllerActivity    : onSuccess(List<Book> books)
+deactivate GoogleApiFacade
 
-SearchBooksFragment -> BookRepository : findBooks(query)
-BookRepository -> SearchBooksFragment : return List<Book>
+ControllerActivity --> SearchBooksFragment : onSearchBooksSuccess(books)
+deactivate ControllerActivity
+activate SearchBooksFragment
 
-SearchBooksFragment -> UI : showBookList(list)
-User -> UI : selects bookId
-UI -> SearchBooksFragment : onBookSelected(bookId)
+SearchBooksFragment -> SearchBooksAdapter : updateData(books)
+activate SearchBooksAdapter
+SearchBooksAdapter --> SearchBooksFragment : notifyDataSetChanged()
+deactivate SearchBooksAdapter
 
-SearchBooksFragment -> BookRepository : getBookById(bookId)
-BookRepository -> SearchBooksFragment : return Book
-SearchBooksFragment -> UI : showBookDetail(Book)
-
+SearchBooksFragment --> User             : display updated results
+deactivate SearchBooksFragment
 @enduml
 ```

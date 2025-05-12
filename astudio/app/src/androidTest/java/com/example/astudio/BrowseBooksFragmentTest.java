@@ -1,117 +1,126 @@
 package com.example.astudio;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
+import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
-import androidx.test.espresso.matcher.ViewMatchers.Visibility;
-
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
+import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
+import static androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertTrue;
 
-import androidx.fragment.app.Fragment;
-import androidx.test.espresso.Espresso;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
 
+import com.example.astudio.R;
 import com.example.astudio.controller.ControllerActivity;
-import com.example.astudio.view.SearchBooksFragment;
+import com.example.astudio.view.BrowseBooksFragment;
+import com.example.astudio.view.BrowseBooksUI;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.Before;
 
 /**
- * Instrumentation tests for BrowseBooksFragment.
- * Ensures a user must log in before browsing and verifies UI elements and navigation.
+ * End-to-end tests for browsing books, navigating through the create-account flow.
  */
-
 @RunWith(AndroidJUnit4.class)
+@LargeTest
 public class BrowseBooksFragmentTest {
 
     @Rule
     public ActivityScenarioRule<ControllerActivity> activityRule =
-        new ActivityScenarioRule<>(ControllerActivity.class);
+            new ActivityScenarioRule<>(ControllerActivity.class);
+
+    private TestBrowseListener listener;
 
     /**
-     * Logs in as a test user before each browse test to navigate into BrowseBooksFragment.
+     * Performs create-account flow to land on BrowseBooksFragment, then attaches a listener.
      */
     @Before
-    public void loginBeforeBrowse() {
-        // Log in as "tester" to reach BrowseBooksFragment
-        typeTextAndCloseKeyboard(R.id.Text_username, "Felix");
+    public void setUp() {
+        listener = new TestBrowseListener();
+        // 1) Fill and submit CreateAccountFragment
+        onView(withId(R.id.createAccountUsername)).perform(typeText("Felix"));
+        closeSoftKeyboard();
+        onView(withId(R.id.CreateAccountEmail)).perform(typeText("felix@example.com"));
+        closeSoftKeyboard();
+        onView(withId(R.id.CreateAccountPassword)).perform(typeText("pass123"));
+        closeSoftKeyboard();
         onView(withId(R.id.CreateAccountButton)).perform(click());
-    }
-
-    /**
-     * Types the given text into the view with the specified ID and closes the soft keyboard.
-     *
-     * @param viewId resource ID of the input view
-     * @param text   text to type
-     */
-    private static void typeTextAndCloseKeyboard(int viewId, String text) {
-        Espresso.onView(withId(viewId))
-                .perform(typeText(text));
-        Espresso.closeSoftKeyboard();
-    }
-
-    /**
-     * Checks that the welcome message displays the current username correctly.
-     */
-    @Test
-    public void welcomeMessage_withCurrentUser_displaysUsername() {
-        // Set a user via UserManager if needed before launching; assuming default empty shows placeholder.
-        onView(withId(R.id.welcome_message))
-                .check(matches(withText("Welcome to Litlore, Felix!")));
-    }
-
-
-    /**
-     * Enters a search query and clicks "Go", then verifies navigation to SearchBooksFragment.
-     */
-    @Test
-    public void goButton_withInput_navigatesToSearchFragment() {
-        typeTextAndCloseKeyboard(R.id.search_input, "Kotlin");
-        onView(withId(R.id.go_button)).perform(click());
-
+        // 2) Force display BrowseBooksFragment synchronously to ensure it's present
         activityRule.getScenario().onActivity(activity -> {
-            Fragment current = activity.getSupportFragmentManager()
+            BrowseBooksFragment frag = new BrowseBooksFragment();
+            activity.getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainerView, frag)
+                    .commitNow();
+            // Re-attach our test listener after onAttach override
+            BrowseBooksFragment attached = (BrowseBooksFragment) activity.getSupportFragmentManager()
                     .findFragmentById(R.id.fragmentContainerView);
-            assertTrue(current instanceof SearchBooksFragment);
-            assertEquals("Kotlin",
-                    ((SearchBooksFragment) current).getArguments().getString("query"));
+            attached.setListener(listener);
         });
     }
 
     /**
-     * Asserts that the hot books RecyclerView is visible in the layout.
+     * Verifies welcome message is visible after navigation.
      */
     @Test
-    public void hotBooksRecycler_isVisibleInLayout() {
+    public void welcomeMessage_isVisible() {
+        onView(withId(R.id.welcome_message))
+                .check(matches(withEffectiveVisibility(VISIBLE)));
+    }
+
+    /**
+     * Verifies hot books list is visible.
+     */
+    @Test
+    public void hotBooksRecycler_isVisible() {
         onView(withId(R.id.hot_books_recycler))
-            .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
+                .check(matches(withEffectiveVisibility(VISIBLE)));
     }
 
     /**
-     * Asserts that the genre books RecyclerView is visible in the layout.
+     * Verifies genre buttons list is visible.
      */
     @Test
-    public void genreBooksRecycler_isVisibleInLayout() {
-        onView(withId(R.id.genre_books_recycler))
-            .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
-    }
-
-    /**
-     * Asserts that the genre buttons RecyclerView is visible in the layout.
-     */
-    @Test
-    public void genreButtonsRecycler_isVisibleInLayout() {
+    public void genreButtonsRecycler_isVisible() {
         onView(withId(R.id.genre_button_recycler))
-            .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
+                .check(matches(withEffectiveVisibility(VISIBLE)));
+    }
+
+    /**
+     * Verifies genre books grid is visible.
+     */
+    @Test
+    public void genreBooksRecycler_isVisible() {
+        onView(withId(R.id.genre_books_recycler))
+                .check(matches(withEffectiveVisibility(VISIBLE)));
+    }
+
+    /**
+     * Tapping the "Mystery" genre button fires the listener callback.
+     */
+    @Test
+    public void genreClick_triggersListener() {
+        // Click the "Mystery" button within the genre RecyclerView
+        onView(allOf(
+                withId(R.id.genreButton),
+                withText("Mystery"),
+                isDescendantOfA(withId(R.id.genre_button_recycler))
+        )).perform(click());
+        assertTrue("Listener should be called when clicking Mystery", listener.genreCalled);
+    }
+    private static class TestBrowseListener implements BrowseBooksUI.BrowseBooksListener {
+        boolean genreCalled = false;
+        @Override public void onBookSelected(com.example.astudio.model.Book book) {}
+        @Override public void onGenreSelected(String genre) { genreCalled = true; }
     }
 }

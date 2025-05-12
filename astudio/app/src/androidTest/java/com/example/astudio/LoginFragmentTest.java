@@ -1,73 +1,88 @@
 package com.example.astudio;
 
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
-import androidx.fragment.app.Fragment;
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.core.app.ActivityScenario;
 
 import com.example.astudio.controller.ControllerActivity;
-import com.example.astudio.model.UserManager;
 import com.example.astudio.view.LoginFragment;
+import com.example.astudio.view.LoginUI;
 
-import org.junit.Rule;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(AndroidJUnit4.class)
 /**
- * Instrumentation tests for LoginFragment.
- * Verifies login behavior: error toast on empty input and successful navigation on valid input.
+ * Espresso tests for {@link LoginFragment}, hosted in {@link ControllerActivity}.
+ * Verifies empty-field handling and listener invocation on valid input.
  */
+@RunWith(AndroidJUnit4.class)
 public class LoginFragmentTest {
-
-    @Rule
-    public ActivityScenarioRule<ControllerActivity> activityRule =
-            new ActivityScenarioRule<>(ControllerActivity.class);
+    private ActivityScenario<ControllerActivity> scenario;
+    private TestLoginListener listener;
 
     /**
-     * Types the given text into the view with the specified ID and closes the soft keyboard.
-     *
-     * @param viewId the resource ID of the input view
-     * @param text the text to type into the view
+     * Launches ControllerActivity, replaces its content with LoginFragment,
+     * and sets up a test listener for callback assertions.
      */
-    private static void typeTextAndCloseKeyboard(int viewId, String text) {
-        onView(withId(viewId))
-                .perform(typeText(text));
-        closeSoftKeyboard();
+    @Before
+    public void setUp() {
+        listener = new TestLoginListener();
+        scenario = ActivityScenario.launch(ControllerActivity.class);
+        scenario.onActivity(activity -> {
+            LoginFragment fragment = new LoginFragment();
+            fragment.setListener(listener);
+            activity.getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainerView, fragment)
+                    .commitNow();
+        });
     }
 
-
-    @Test
     /**
-     * Enters a valid username, clicks login, and verifies that the user
-     * is saved in UserManager and the LoginFragment is replaced.
+     * Typing valid email and password calls listener.onLogin with correct arguments.
      */
-    public void login_validUsername_setsUserAndNavigates() {
-        String testUser = "Felix";
+    @Test
+    public void validInput_callsOnLogin() {
+        String email = "test@example.com";
+        String password = "password123";
+        onView(withId(R.id.textEmail))
+                .perform(typeText(email), closeSoftKeyboard());
+        onView(withId(R.id.textPassword))
+                .perform(typeText(password), closeSoftKeyboard());
+        onView(withId(R.id.LoginButton)).perform(click());
 
-        // Enter a valid username
-        typeTextAndCloseKeyboard(R.id.Text_username, testUser);
+        assertTrue("Listener should be called", listener.called);
+        assertEquals("Email should match", email, listener.email);
+        assertEquals("Password should match", password, listener.password);
+    }
 
-        // Click login
-        onView(withId(R.id.CreateAccountButton))
-                .perform(click());
+    /**
+     * Test implementation of {@link LoginUI.LoginListener} capturing callbacks.
+     */
+    private static class TestLoginListener implements LoginUI.LoginListener {
+        boolean called = false;
+        String email, password;
 
-        activityRule.getScenario().onActivity(activity -> {
-            // Verify UserManager has the new user
-            assertEquals(testUser, UserManager.getInstance()
-                    .getCurrentUser().getUsername());
+        @Override
+        public void onLogin(String email, String password, LoginUI ui) {
+            called = true;
+            this.email = email;
+            this.password = password;
+        }
 
-            // Verify the LoginFragment is no longer displayed
-            Fragment current = activity.getSupportFragmentManager()
-                    .findFragmentById(R.id.fragmentContainerView);
-            assertFalse(current instanceof LoginFragment);
-        });
+        @Override
+        public void onLogin(String username) {
+            // not used
+        }
     }
 }
