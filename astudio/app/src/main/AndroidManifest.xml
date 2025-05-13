@@ -15,7 +15,7 @@
         android:theme="@style/Theme.Astudio"
         tools:targetApi="31">
         <activity
-            android:name=".controller.ControllerActivity"
+            android:name="edu.vassar.litlore.controller.ControllerActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

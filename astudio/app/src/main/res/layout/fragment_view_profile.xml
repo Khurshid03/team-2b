@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/secondary"
-    tools:context=".view.ViewProfileFragment">
+    tools:context="edu.vassar.litlore.view.ViewProfileFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/fixed_top_section"

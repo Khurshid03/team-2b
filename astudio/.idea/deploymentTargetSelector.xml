@@ -5,7 +5,13 @@
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
+      <SelectionState runConfigName="deleteReview()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
       <SelectionState runConfigName="ReviewManagerTest">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
+      <SelectionState runConfigName="showMoreToggle_changesText()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

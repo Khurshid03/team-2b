@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.astudio"
+    namespace = "edu.vassar.litlore"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.astudio"
+        applicationId = "edu.vassar.litlore"
         minSdk = 31
         targetSdk = 35
         versionCode = 1
