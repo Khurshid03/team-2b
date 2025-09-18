@@ -68,3 +68,4 @@
 
 
 
+This app is by Khurshid Ergashev and Felix Omondi. Thanks to Prof. Rui and all the coaches for guidance and help!
